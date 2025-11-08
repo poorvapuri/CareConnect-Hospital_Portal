@@ -17,18 +17,22 @@ export const AppProvider = ({ children }) => {
   const [message, setMessage] = useState(null);
   const [modal, setModal] = useState({ isOpen: false, title: '', content: null });
   const [refresh, setRefresh] = useState(0);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('careconnect_token');
-    if (token) {
+    const user = localStorage.getItem('careconnect_user');
+    
+    if (token && user) {
       apiService.setToken(token);
-      // You might want to validate the token here
+      setCurrentUser(JSON.parse(user));
       setView('dashboard');
     }
   }, []);
 
   const showMessage = (type, text) => {
     setMessage({ type, text });
+    setTimeout(() => setMessage(null), 3000);
   };
 
   const hideMessage = () => {
@@ -49,19 +53,25 @@ export const AppProvider = ({ children }) => {
 
   const handleLogin = async (email, password) => {
     try {
-      const user = await apiService.login(email, password);
-      setCurrentUser(user);
+      setLoading(true);
+      const data = await apiService.login(email, password);
+      setCurrentUser(data.user);
+      localStorage.setItem('careconnect_user', JSON.stringify(data.user));
       setView('dashboard');
       showMessage('success', 'Login successful!');
       return true;
     } catch (error) {
-      showMessage('error', error.message);
+      showMessage('error', error.message || 'Login failed');
       return false;
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleLogout = () => {
     apiService.clearToken();
+    localStorage.removeItem('careconnect_user');
+    localStorage.removeItem('careconnect_token');
     setCurrentUser(null);
     setView('login');
     showMessage('success', 'Logged out successfully');
@@ -69,13 +79,15 @@ export const AppProvider = ({ children }) => {
 
   const handleSignup = async (userData) => {
     try {
+      setLoading(true);
       await apiService.signup(userData);
       showMessage('success', 'Account created successfully! Please login.');
-      setView('login');
       return true;
     } catch (error) {
-      showMessage('error', error.message);
+      showMessage('error', error.message || 'Signup failed');
       return false;
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -86,6 +98,7 @@ export const AppProvider = ({ children }) => {
     message,
     modal,
     refresh,
+    loading,
     showMessage,
     hideMessage,
     openModal,

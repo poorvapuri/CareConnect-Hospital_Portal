@@ -36,6 +36,7 @@ class ApiService {
 
       return data;
     } catch (error) {
+      console.error('API Error:', error);
       throw error;
     }
   }
@@ -47,7 +48,7 @@ class ApiService {
       body: JSON.stringify({ email, password })
     });
     this.setToken(data.token);
-    return data.user;
+    return data;
   }
 
   async signup(userData) {
@@ -158,7 +159,15 @@ class ApiService {
   // User endpoints
   async getUsers(role = null) {
     const params = role ? `?role=${role}` : '';
-    return await this.request(`/auth/users${params}`);
+    return await this.request(`/users${params}`);
+  }
+
+  async getDoctors() {
+    return await this.request('/users?role=Doctor');
+  }
+
+  async getPatients() {
+    return await this.request('/users?role=Patient');
   }
 }
 
