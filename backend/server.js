@@ -12,7 +12,7 @@ import employeeRoutes from './routes/employees.js';
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 8080;
 
 // Rate limiting
 const limiter = rateLimit({
