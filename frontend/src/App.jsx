@@ -8,6 +8,7 @@ import { DoctorDashboard } from './components/dashboard/doctorDashboard';
 import { ReceptionistDashboard } from './components/dashboard/receptionistDashboard';
 import { LabTechnicianDashboard } from './components/dashboard/labTechDashboard';
 import { AdminDashboard } from './components/dashboard/adminDashboard';
+import Chatbot from './components/common/Chatbot';
 
 function App() {
   const { view, currentUser, setView, handleLogout } = useApp();
@@ -202,6 +203,7 @@ function App() {
       <Message />
       <Modal />
       {view === 'login' || !currentUser ? <Login /> : <Dashboard />}
+      <Chatbot />
     </div>
   );
 }
