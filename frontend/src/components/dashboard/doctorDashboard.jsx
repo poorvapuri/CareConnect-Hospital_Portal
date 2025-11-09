@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { apiService } from '../../services/api';
 
-export const AppointmentBooking = () => {
+export const DoctorDashboard = () => {
   const { currentUser, showMessage, triggerRefresh } = useApp();
   const [doctors, setDoctors] = useState([]);
   const [selectedDoctor, setSelectedDoctor] = useState('');

@@ -1137,3 +1137,174 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+/* Dashboard Welcome */
+.dashboard-welcome {
+  margin-bottom: 30px;
+}
+
+.dashboard-welcome h2 {
+  color: #333;
+  margin-bottom: 5px;
+}
+
+.dashboard-welcome p {
+  color: #666;
+}
+
+/* Dashboard Sections */
+.dashboard-sections {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 30px;
+  margin-top: 30px;
+}
+
+/* Recent Appointments */
+.recent-appointments {
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 12px;
+}
+
+.appointment-list {
+  margin-top: 15px;
+}
+
+.appointment-item {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 15px;
+  background: white;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+.appointment-date {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px;
+  background: #667eea;
+  color: white;
+  border-radius: 8px;
+  min-width: 50px;
+}
+
+.appointment-date .day {
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.appointment-date .month {
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.appointment-details {
+  flex: 1;
+}
+
+.appointment-details h4 {
+  margin-bottom: 5px;
+  color: #333;
+}
+
+.appointment-details p {
+  color: #666;
+  font-size: 14px;
+}
+
+/* Quick Actions */
+.quick-actions {
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 12px;
+}
+
+.action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.action-btn:hover {
+  background: #667eea;
+  color: white;
+  border-color: #667eea;
+}
+
+.action-icon {
+  font-size: 20px;
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 40px;
+}
+
+.empty-state p {
+  color: #666;
+  margin-bottom: 20px;
+}
+
+/* Stat Icons */
+.stat-icon {
+  font-size: 30px;
+  margin-bottom: 10px;
+}
+
+.stat-content h3 {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 5px;
+}
+
+/* Card improvements */
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.card-body {
+  margin-bottom: 15px;
+}
+
+.card-body p {
+  margin-bottom: 8px;
+}
+
+.btn-small {
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+.no-data {
+  text-align: center;
+  color: #999;
+  padding: 20px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .dashboard-sections {
+    grid-template-columns: 1fr;
+  }
+}

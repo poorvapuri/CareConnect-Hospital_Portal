@@ -3,14 +3,18 @@ import { useApp } from './context/AppContext';
 import { Message } from './components/common/Message';
 import { Modal } from './components/common/Modal';
 import { Login } from './components/auth/Login';
-import * as PatientModule from './components/dashboard/patientDashboard';
-import * as DoctorModule from './components/dashboard/doctorDashboard';
+import { PatientDashboard } from './components/dashboard/patientDashboard';
+import { DoctorDashboard } from './components/dashboard/doctorDashboard';
 import { ReceptionistDashboard } from './components/dashboard/receptionistDashboard';
 import { LabTechnicianDashboard } from './components/dashboard/labTechDashboard';
 import { AdminDashboard } from './components/dashboard/adminDashboard';
 
 function App() {
   const { view, currentUser, setView, handleLogout } = useApp();
+
+  // Debug logging
+  console.log('Current view:', view);
+  console.log('Current user:', currentUser);
 
   const renderDashboardContent = () => {
     const role = currentUser?.role || 'Patient';
@@ -30,15 +34,6 @@ function App() {
     }
   };
 
-  // Resolve possibly-mismatched exports from dashboard modules (some files export different names)
-  const PatientDashboard = PatientModule.PatientDashboard || PatientModule.default || (() => (
-    <div className="section"><h2>Patient Dashboard</h2><p>Welcome.</p></div>
-  ));
-
-  const DoctorDashboard = DoctorModule.DoctorDashboard || DoctorModule.default || (() => (
-    <div className="section"><h2>Doctor Dashboard</h2><p>Welcome.</p></div>
-  ));
-
   const Dashboard = () => (
     <div className="dashboard-container">
       <header className="dashboard-header">
@@ -55,74 +50,141 @@ function App() {
       <nav className="dashboard-nav">
         {currentUser?.role === 'Admin' && (
           <>
-            <button onClick={() => setView('dashboard')} className={view === 'dashboard' ? 'active' : ''}>
+            <button 
+              onClick={() => {
+                console.log('Clicking Dashboard');
+                setView('dashboard');
+              }} 
+              className={view === 'dashboard' ? 'active' : ''}
+            >
               Dashboard
             </button>
-            <button onClick={() => setView('employees')} className={view === 'employees' ? 'active' : ''}>
+            <button 
+              onClick={() => {
+                console.log('Clicking Employees');
+                setView('employees');
+              }} 
+              className={view === 'employees' ? 'active' : ''}
+            >
               Employees
             </button>
-            <button onClick={() => setView('all-appointments')} className={view === 'all-appointments' ? 'active' : ''}>
+            <button 
+              onClick={() => {
+                console.log('Clicking All Appointments');
+                setView('all-appointments');
+              }} 
+              className={view === 'all-appointments' ? 'active' : ''}
+            >
               All Appointments
             </button>
           </>
         )}
+        
         {currentUser?.role === 'Doctor' && (
           <>
-            <button onClick={() => setView('dashboard')} className={view === 'dashboard' ? 'active' : ''}>
+            <button 
+              onClick={() => setView('dashboard')} 
+              className={view === 'dashboard' ? 'active' : ''}
+            >
               Dashboard
             </button>
-            <button onClick={() => setView('schedule')} className={view === 'schedule' ? 'active' : ''}>
+            <button 
+              onClick={() => setView('schedule')} 
+              className={view === 'schedule' ? 'active' : ''}
+            >
               My Schedule
             </button>
-            <button onClick={() => setView('prescriptions')} className={view === 'prescriptions' ? 'active' : ''}>
+            <button 
+              onClick={() => setView('prescriptions')} 
+              className={view === 'prescriptions' ? 'active' : ''}
+            >
               Prescriptions
             </button>
           </>
         )}
+        
         {currentUser?.role === 'Receptionist' && (
           <>
-            <button onClick={() => setView('dashboard')} className={view === 'dashboard' ? 'active' : ''}>
+            <button 
+              onClick={() => setView('dashboard')} 
+              className={view === 'dashboard' ? 'active' : ''}
+            >
               Dashboard
             </button>
-            <button onClick={() => setView('appointments')} className={view === 'appointments' ? 'active' : ''}>
+            <button 
+              onClick={() => setView('appointments')} 
+              className={view === 'appointments' ? 'active' : ''}
+            >
               Appointments
             </button>
-            <button onClick={() => setView('checkin')} className={view === 'checkin' ? 'active' : ''}>
+            <button 
+              onClick={() => setView('checkin')} 
+              className={view === 'checkin' ? 'active' : ''}
+            >
               Check-in
             </button>
-            <button onClick={() => setView('billing')} className={view === 'billing' ? 'active' : ''}>
+            <button 
+              onClick={() => setView('billing')} 
+              className={view === 'billing' ? 'active' : ''}
+            >
               Billing
             </button>
           </>
         )}
+        
         {currentUser?.role === 'Lab Technician' && (
           <>
-            <button onClick={() => setView('dashboard')} className={view === 'dashboard' ? 'active' : ''}>
+            <button 
+              onClick={() => setView('dashboard')} 
+              className={view === 'dashboard' ? 'active' : ''}
+            >
               Dashboard
             </button>
-            <button onClick={() => setView('lab-tests')} className={view === 'lab-tests' ? 'active' : ''}>
+            <button 
+              onClick={() => setView('lab-tests')} 
+              className={view === 'lab-tests' ? 'active' : ''}
+            >
               Lab Tests
             </button>
-            <button onClick={() => setView('lab-reports')} className={view === 'lab-reports' ? 'active' : ''}>
+            <button 
+              onClick={() => setView('lab-reports')} 
+              className={view === 'lab-reports' ? 'active' : ''}
+            >
               Upload Reports
             </button>
           </>
         )}
-        {currentUser?.role === 'Patient' && (
+        
+        {(currentUser?.role === 'Patient' || !currentUser?.role) && (
           <>
-            <button onClick={() => setView('dashboard')} className={view === 'dashboard' ? 'active' : ''}>
+            <button 
+              onClick={() => setView('dashboard')} 
+              className={view === 'dashboard' ? 'active' : ''}
+            >
               Dashboard
             </button>
-            <button onClick={() => setView('book-appointment')} className={view === 'book-appointment' ? 'active' : ''}>
+            <button 
+              onClick={() => setView('book-appointment')} 
+              className={view === 'book-appointment' ? 'active' : ''}
+            >
               Book Appointment
             </button>
-            <button onClick={() => setView('my-appointments')} className={view === 'my-appointments' ? 'active' : ''}>
+            <button 
+              onClick={() => setView('my-appointments')} 
+              className={view === 'my-appointments' ? 'active' : ''}
+            >
               My Appointments
             </button>
-            <button onClick={() => setView('lab-reports')} className={view === 'lab-reports' ? 'active' : ''}>
+            <button 
+              onClick={() => setView('lab-reports')} 
+              className={view === 'lab-reports' ? 'active' : ''}
+            >
               Lab Reports
             </button>
-            <button onClick={() => setView('prescriptions')} className={view === 'prescriptions' ? 'active' : ''}>
+            <button 
+              onClick={() => setView('prescriptions')} 
+              className={view === 'prescriptions' ? 'active' : ''}
+            >
               Prescriptions
             </button>
           </>
