@@ -36,5 +36,24 @@ router.post('/', authenticateToken, authorizeRoles('Admin'), async (req, res) =>
     res.status(500).json({ error: error.message });
   }
 });
+// Add doctor schedules endpoint
+router.get('/doctor-schedules', authenticateToken, authorizeRoles('Admin'), async (req, res) => {
+  try {
+    const doctors = await User.findAll('Doctor');
+    const schedules = [];
+    
+    for (const doctor of doctors) {
+      const doctorSchedules = await Schedule.findByDoctorId(doctor.id); // You'll need to create Schedule model
+      schedules.push({
+        doctor: doctor,
+        schedules: doctorSchedules
+      });
+    }
+    
+    res.json(schedules);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 export default router;

@@ -2,10 +2,8 @@ import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 
 export const Login = () => {
-  const { handleLogin, handleSignup, loading } = useApp();
+  const { handleLogin, handleSignup, showMessage } = useApp();
   const [isSignup, setIsSignup] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -16,136 +14,76 @@ export const Login = () => {
     role: 'Patient'
   });
 
-  const handleLoginSubmit = async (e) => {
-    e.preventDefault();
-    const success = await handleLogin(email, password);
-    if (success) {
-      // Login successful - the view change is handled in handleLogin
-      console.log('Login successful');
-    }
-  };
-
-  const handleSignupSubmit = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (formData.password !== formData.confirmPassword) {
-      alert('Passwords do not match!');
-      return;
-    }
-    
-    const success = await handleSignup({
-      name: formData.name,
-      email: formData.email,
-      password: formData.password,
-      role: formData.role,
-      contactNumber: formData.contactNumber,
-      medicalHistory: formData.medicalHistory
-    });
-    
-    if (success) {
-      setIsSignup(false);
-      setEmail(formData.email);
-      setPassword('');
-    }
-  };
-
-  if (isSignup) {
-    return (
-      <div className="auth-container">
-        <div className="auth-card">
-          <div className="auth-header">
-            <h1>CareConnect</h1>
-            <p>Hospital Management System</p>
-          </div>
+    if (isSignup) {
+      if (formData.password !== formData.confirmPassword) {
+        showMessage('error', 'Passwords do not match!');
+        return;
+      }
+      
+      try {
+        let result;
+        
+        if (formData.role === 'Patient') {
+          // Register as patient
+          result = await fetch('/api/auth/register/patient', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              name: formData.name,
+              email: formData.email,
+              password: formData.password,
+              contactNumber: formData.contactNumber,
+              medicalHistory: formData.medicalHistory
+            })
+          });
+        } else {
+          // Register as employee (this would typically be done by admin in a separate flow)
+          result = await fetch('/api/auth/register/employee', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              name: formData.name,
+              email: formData.email,
+              password: formData.password,
+              role: formData.role
+            })
+          });
+        }
+        
+        const data = await result.json();
+        
+        if (result.ok) {
+          showMessage('success', 'Account created successfully!');
           
-          <form onSubmit={handleSignupSubmit} className="auth-form">
-            <h2>Create Account</h2>
-            
-            <input
-              type="text"
-              placeholder="Full Name"
-              value={formData.name}
-              onChange={(e) => setFormData({...formData, name: e.target.value})}
-              required
-              disabled={loading}
-            />
-            
-            <select
-              value={formData.role}
-              onChange={(e) => setFormData({...formData, role: e.target.value})}
-              disabled={loading}
-            >
-              <option value="Patient">Patient</option>
-              <option value="Doctor">Doctor</option>
-              <option value="Receptionist">Receptionist</option>
-              <option value="Lab Technician">Lab Technician</option>
-              <option value="Admin">Admin</option>
-            </select>
-            
-            {formData.role === 'Patient' && (
-              <>
-                <input
-                  type="tel"
-                  placeholder="Contact Number"
-                  value={formData.contactNumber}
-                  onChange={(e) => setFormData({...formData, contactNumber: e.target.value})}
-                  required
-                  disabled={loading}
-                />
-                
-                <textarea
-                  placeholder="Medical History (Optional)"
-                  value={formData.medicalHistory}
-                  onChange={(e) => setFormData({...formData, medicalHistory: e.target.value})}
-                  disabled={loading}
-                />
-              </>
-            )}
-            
-            <input
-              type="email"
-              placeholder="Email"
-              value={formData.email}
-              onChange={(e) => setFormData({...formData, email: e.target.value})}
-              required
-              disabled={loading}
-            />
-            
-            <input
-              type="password"
-              placeholder="Password"
-              value={formData.password}
-              onChange={(e) => setFormData({...formData, password: e.target.value})}
-              required
-              disabled={loading}
-            />
-            
-            <input
-              type="password"
-              placeholder="Confirm Password"
-              value={formData.confirmPassword}
-              onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
-              required
-              disabled={loading}
-            />
-            
-            <button type="submit" className="btn-primary" disabled={loading}>
-              {loading ? 'Creating Account...' : 'Sign Up'}
-            </button>
-            
-            <button
-              type="button"
-              className="btn-link"
-              onClick={() => setIsSignup(false)}
-              disabled={loading}
-            >
-              Already have an account? Sign In
-            </button>
-          </form>
-        </div>
-      </div>
-    );
-  }
+          // Auto-login for patient
+          if (formData.role === 'Patient') {
+            await handleLogin(formData.email, formData.password);
+          } else {
+            setIsSignup(false);
+            setFormData(prev => ({
+              ...prev,
+              email: '',
+              password: '',
+              confirmPassword: ''
+            }));
+          }
+        } else {
+          showMessage('error', data.error || 'Registration failed');
+        }
+      } catch (error) {
+        showMessage('error', 'Registration failed: ' + error.message);
+      }
+    } else {
+      await handleLogin(formData.email, formData.password);
+    }
+  };
 
   return (
     <div className="auth-container">
@@ -155,46 +93,106 @@ export const Login = () => {
           <p>Hospital Management System</p>
         </div>
         
-        <form onSubmit={handleLoginSubmit} className="auth-form">
-          <h2>Sign In</h2>
+        <form onSubmit={handleSubmit} className="auth-form">
+          <h2>{isSignup ? 'Create Account' : 'Sign In'}</h2>
+          
+          {isSignup && (
+            <>
+              <input
+                type="text"
+                placeholder="Full Name"
+                value={formData.name}
+                onChange={(e) => setFormData({...formData, name: e.target.value})}
+                required
+              />
+              
+              <select
+                value={formData.role}
+                onChange={(e) => setFormData({...formData, role: e.target.value})}
+              >
+                <option value="Patient">Patient</option>
+                <option value="Doctor">Doctor</option>
+                <option value="Receptionist">Receptionist</option>
+                <option value="Lab Technician">Lab Technician</option>
+              </select>
+              
+              {formData.role === 'Patient' && (
+                <>
+                  <input
+                    type="tel"
+                    placeholder="Contact Number"
+                    value={formData.contactNumber}
+                    onChange={(e) => setFormData({...formData, contactNumber: e.target.value})}
+                    required
+                  />
+                  
+                  <textarea
+                    placeholder="Medical History (Optional)"
+                    value={formData.medicalHistory}
+                    onChange={(e) => setFormData({...formData, medicalHistory: e.target.value})}
+                  />
+                </>
+              )}
+            </>
+          )}
           
           <input
             type="email"
             placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            value={formData.email}
+            onChange={(e) => setFormData({...formData, email: e.target.value})}
             required
-            disabled={loading}
           />
           
           <input
             type="password"
             placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            value={formData.password}
+            onChange={(e) => setFormData({...formData, password: e.target.value})}
             required
-            disabled={loading}
           />
           
-          <button type="submit" className="btn-primary" disabled={loading}>
-            {loading ? 'Signing in...' : 'Sign In'}
+          {isSignup && (
+            <input
+              type="password"
+              placeholder="Confirm Password"
+              value={formData.confirmPassword}
+              onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
+              required
+            />
+          )}
+          
+          <button type="submit" className="btn-primary">
+            {isSignup ? 'Sign Up' : 'Sign In'}
           </button>
           
           <button
             type="button"
             className="btn-link"
-            onClick={() => setIsSignup(true)}
-            disabled={loading}
+            onClick={() => {
+              setIsSignup(!isSignup);
+              setFormData({
+                name: '',
+                email: '',
+                password: '',
+                confirmPassword: '',
+                contactNumber: '',
+                medicalHistory: '',
+                role: 'Patient'
+              });
+            }}
           >
-            Don't have an account? Sign Up
+            {isSignup ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
           </button>
           
-          <div className="test-credentials">
-            <p>Test Credentials:</p>
-            <small>patient@care.com / password123</small>
-            <small>doctor@care.com / password123</small>
-            <small>admin@care.com / password123</small>
-          </div>
+          {!isSignup && (
+            <div className="test-credentials">
+              <p>Test Credentials:</p>
+              <small>Patient: patient@care.com / password123</small>
+              <small>Doctor: doctor@care.com / password123</small>
+              <small>Admin: admin@care.com / password123</small>
+            </div>
+          )}
         </form>
       </div>
     </div>

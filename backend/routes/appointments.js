@@ -53,4 +53,66 @@ router.patch('/:id/status', authenticateToken, async (req, res) => {
   }
 });
 
+// Add these new endpoints
+
+// Get available doctors
+router.get('/available', authenticateToken, async (req, res) => {
+  try {
+    const doctors = await User.findAll('Doctor');
+    res.json(doctors);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get doctor's schedule for a specific date
+router.get('/doctor/:doctorId/date/:date', authenticateToken, async (req, res) => {
+  try {
+    const { doctorId, date } = req.params;
+    const appointments = await Appointment.findAll({
+      doctorId,
+      date
+    });
+    res.json(appointments);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Walk-in appointment creation
+router.post('/walk-in', authenticateToken, authorizeRoles('Receptionist'), async (req, res) => {
+  try {
+    const { patientName, contactNumber, doctorId, date, time } = req.body;
+    
+    // Create or find patient
+    let patient = await User.findByEmail(`${contactNumber}@patient.com`);
+    if (!patient) {
+      patient = await User.create({
+        name: patientName,
+        email: `${contactNumber}@patient.com`,
+        password: 'temp123',
+        role: 'Patient'
+      });
+      
+      await Patient.create({
+        userId: patient.id,
+        contactNumber,
+        medicalHistory: ''
+      });
+    }
+    
+    const appointment = await Appointment.create({
+      patientId: patient.id,
+      doctorId,
+      date,
+      time,
+      status: 'Scheduled'
+    });
+    
+    res.status(201).json(appointment);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;

@@ -65,4 +65,32 @@ router.post('/:id/upload',
   }
 );
 
+
+// Add these new endpoints
+
+// Get pending tests
+router.get('/pending', authenticateToken, authorizeRoles('Lab Technician'), async (req, res) => {
+  try {
+    const labTests = await LabTest.findAll({
+      status: 'Pending',
+      paymentStatus: 'Payment Verified'
+    });
+    res.json(labTests);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get tests by payment status
+router.get('/payment-status/:status', authenticateToken, authorizeRoles('Lab Technician'), async (req, res) => {
+  try {
+    const { status } = req.params;
+    const labTests = await LabTest.findAll({
+      paymentStatus: status
+    });
+    res.json(labTests);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 export default router;

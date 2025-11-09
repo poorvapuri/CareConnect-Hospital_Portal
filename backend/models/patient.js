@@ -2,7 +2,7 @@ import pool from '../config/database.js';
 
 export class Patient {
   static async create(patientData) {
-    const { userId, contactNumber, medicalHistory } = patientData;
+    const { userId, contactNumber, medicalHistory = '' } = patientData;
     
     const query = `
       INSERT INTO patients (user_id, contact_number, medical_history)

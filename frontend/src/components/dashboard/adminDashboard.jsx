@@ -1,206 +1,324 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { apiService } from '../../services/api';
-import { EmployeeManagement } from '../admin/EmployeeManagement';
 
 export const AdminDashboard = () => {
-  const { view, showMessage, refresh } = useApp();
-  const [stats, setStats] = useState({
-    totalEmployees: 0,
-    totalPatients: 0,
-    totalAppointments: 0,
-    todayAppointments: 0,
-    totalDoctors: 0,
-    totalRevenue: 0
-  });
-  const [recentActivities, setRecentActivities] = useState([]);
-  const [allAppointments, setAllAppointments] = useState([]);
+  const { view, setView, showMessage, triggerRefresh } = useApp();
+  const [employees, setEmployees] = useState([]);
+  const [schedules, setSchedules] = useState([]);
+  const [appointments, setAppointments] = useState([]);
+  const [showEmployeeForm, setShowEmployeeForm] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    role: 'Doctor'
+  });
 
+  // Fetch data based on current view
   useEffect(() => {
-    fetchDashboardData();
-  }, [refresh]);
+    fetchData();
+  }, [view]);
 
-  const fetchDashboardData = async () => {
+  const fetchData = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      
-      // Fetch employees
-      const employees = await apiService.getEmployees();
-      const doctors = employees.filter(emp => emp.role === 'Doctor');
-      
-      // Fetch patients
-      const patients = await apiService.getPatients();
-      
-      // Fetch appointments
-      const appointments = await apiService.getAppointments();
-      const today = new Date().toISOString().split('T')[0];
-      const todayApts = appointments.filter(apt => apt.date.split('T')[0] === today);
-      
-      setStats({
-        totalEmployees: employees.length,
-        totalPatients: patients.length,
-        totalAppointments: appointments.length,
-        todayAppointments: todayApts.length,
-        totalDoctors: doctors.length,
-        totalRevenue: appointments.length * 500 // Mock calculation
-      });
-      
-      setAllAppointments(appointments);
-      
-      // Mock recent activities
-      setRecentActivities([
-        { id: 1, action: 'New patient registered', time: '5 minutes ago', type: 'patient' },
-        { id: 2, action: 'Appointment completed', time: '1 hour ago', type: 'appointment' },
-        { id: 3, action: 'Lab report uploaded', time: '2 hours ago', type: 'lab' },
-        { id: 4, action: 'New employee added', time: '3 hours ago', type: 'employee' }
-      ]);
-      
+      switch(view) {
+        case 'employees':
+          await fetchEmployees();
+          break;
+        case 'doctor-schedules':
+          await fetchSchedules();
+          break;
+        case 'all-appointments':
+          await fetchAppointments();
+          break;
+        default:
+          break;
+      }
     } catch (error) {
-      showMessage('error', 'Failed to fetch dashboard data');
+      showMessage('error', error.message);
     } finally {
       setLoading(false);
     }
   };
 
-  if (view === 'employees') {
-    return <EmployeeManagement />;
-  }
+  const fetchEmployees = async () => {
+    try {
+      const empList = await apiService.getEmployees();
+      setEmployees(empList);
+    } catch (error) {
+      throw error;
+    }
+  };
 
-  if (view === 'all-appointments') {
-    return (
-      <div className="section">
-        <h2>All Appointments</h2>
-        {loading ? (
-          <p>Loading...</p>
-        ) : (
-          <div className="appointments-table">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Time</th>
-                  <th>Patient</th>
-                  <th>Doctor</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {allAppointments.map(apt => (
-                  <tr key={apt.id}>
-                    <td>{new Date(apt.date).toLocaleDateString()}</td>
-                    <td>{apt.time}</td>
-                    <td>{apt.patient_name}</td>
-                    <td>{apt.doctor_name}</td>
-                    <td>
-                      <span className={`status ${apt.status}`}>{apt.status}</span>
-                    </td>
-                    <td>
-                      <button className="btn-small">View</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {allAppointments.length === 0 && (
-              <p className="no-data">No appointments found</p>
-            )}
-          </div>
-        )}
-      </div>
-    );
-  }
+  const fetchSchedules = async () => {
+    try {
+      // You'll need to implement this in your apiService
+      const response = await fetch('/api/schedules', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('careconnect_token')}`
+        }
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to fetch schedules');
+      setSchedules(data);
+    } catch (error) {
+      throw error;
+    }
+  };
 
-  return (
+  const fetchAppointments = async () => {
+    try {
+      const response = await fetch('/api/appointments', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('careconnect_token')}`
+        }
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to fetch appointments');
+      setAppointments(data);
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const handleEmployeeSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    
+    try {
+      const response = await fetch('/api/auth/register/employee', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('careconnect_token')}`
+        },
+        body: JSON.stringify(formData)
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to add employee');
+      }
+      
+      showMessage('success', 'Employee added successfully');
+      setShowEmployeeForm(false);
+      setFormData({ name: '', email: '', password: '', role: 'Doctor' });
+      fetchEmployees();
+    } catch (error) {
+      showMessage('error', error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const MainDashboard = () => (
     <div className="section">
       <h2>Admin Dashboard</h2>
+      <div className="stats-grid">
+        <div className="stat-card">
+          <h3>Total Employees</h3>
+          <p>{employees.length}</p>
+        </div>
+        <div className="stat-card">
+          <h3>Active Doctors</h3>
+          <p>{employees.filter(emp => emp.role === 'Doctor').length}</p>
+        </div>
+        <div className="stat-card">
+          <h3>Today's Appointments</h3>
+          <p>{appointments.filter(apt => apt.date === new Date().toISOString().split('T')[0]).length}</p>
+        </div>
+      </div>
+      
+      <div className="section" style={{ marginTop: '30px' }}>
+        <h3>System Management</h3>
+        <p>Welcome to the Admin Dashboard. Manage employees, view schedules, and monitor system activity.</p>
+        <div className="card-actions">
+          <button onClick={() => setView('employees')} className="btn-primary">
+            👥 Manage Employees
+          </button>
+          <button onClick={() => setView('doctor-schedules')} className="btn-secondary">
+            📅 View Doctor Schedules
+          </button>
+          <button onClick={() => setView('all-appointments')} className="btn-secondary">
+            🏥 View All Appointments
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  const EmployeesView = () => (
+    <div className="section">
+      <h2>👥 Employee Management</h2>
+      
+      {showEmployeeForm && (
+        <div className="form-container">
+          <h3>Add New Employee</h3>
+          <form onSubmit={handleEmployeeSubmit}>
+            <div className="form-group">
+              <label>Name</label>
+              <input
+                type="text"
+                value={formData.name}
+                onChange={(e) => setFormData({...formData, name: e.target.value})}
+                required
+                disabled={loading}
+              />
+            </div>
+            
+            <div className="form-group">
+              <label>Email</label>
+              <input
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({...formData, email: e.target.value})}
+                required
+                disabled={loading}
+              />
+            </div>
+            
+            <div className="form-group">
+              <label>Password</label>
+              <input
+                type="password"
+                value={formData.password}
+                onChange={(e) => setFormData({...formData, password: e.target.value})}
+                required
+                disabled={loading}
+              />
+            </div>
+            
+            <div className="form-group">
+              <label>Role</label>
+              <select
+                value={formData.role}
+                onChange={(e) => setFormData({...formData, role: e.target.value})}
+                disabled={loading}
+              >
+                <option value="Doctor">Doctor</option>
+                <option value="Receptionist">Receptionist</option>
+                <option value="Lab Technician">Lab Technician</option>
+              </select>
+            </div>
+            
+            <div className="form-actions">
+              <button type="submit" className="btn-primary" disabled={loading}>
+                {loading ? 'Adding...' : 'Add Employee'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowEmployeeForm(false)}
+                className="btn-secondary"
+                disabled={loading}
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+      
+      <div className="card-grid">
+        {employees.map(emp => (
+          <div key={emp.id} className="card">
+            <h3>{emp.name}</h3>
+            <p><strong>Email:</strong> {emp.email}</p>
+            <p><strong>Role:</strong> {emp.role}</p>
+          </div>
+        ))}
+        {employees.length === 0 && !loading && <p>No employees found</p>}
+        {loading && <p>Loading employees...</p>}
+      </div>
+      
+      <button 
+        onClick={() => setShowEmployeeForm(true)} 
+        className="btn-primary"
+        disabled={loading}
+      >
+        ➕ Add New Employee
+      </button>
+    </div>
+  );
+
+  const DoctorSchedulesView = () => (
+    <div className="section">
+      <h2>📅 Doctor Schedules</h2>
       
       {loading ? (
-        <p>Loading...</p>
+        <p>Loading schedules...</p>
       ) : (
-        <>
-          <div className="stats-grid">
-            <div className="stat-card">
-              <h3>Total Employees</h3>
-              <p className="stat-number">{stats.totalEmployees}</p>
-              <span className="stat-change">+5% from last month</span>
-            </div>
-            
-            <div className="stat-card">
-              <h3>Total Patients</h3>
-              <p className="stat-number">{stats.totalPatients}</p>
-              <span className="stat-change">+12% from last month</span>
-            </div>
-            
-            <div className="stat-card">
-              <h3>Today's Appointments</h3>
-              <p className="stat-number">{stats.todayAppointments}</p>
-              <span className="stat-change">{stats.totalAppointments} total</span>
-            </div>
-            
-            <div className="stat-card">
-              <h3>Total Revenue</h3>
-              <p className="stat-number">${stats.totalRevenue}</p>
-              <span className="stat-change">+8% from last month</span>
-            </div>
-          </div>
-
-          <div className="admin-grid">
-            <div className="recent-activities">
-              <h3>Recent Activities</h3>
-              <div className="activity-list">
-                {recentActivities.map(activity => (
-                  <div key={activity.id} className="activity-item">
-                    <div className={`activity-icon ${activity.type}`}>
-                      {activity.type === 'patient' && '👤'}
-                      {activity.type === 'appointment' && '📅'}
-                      {activity.type === 'lab' && '🔬'}
-                      {activity.type === 'employee' && '👥'}
-                    </div>
-                    <div className="activity-content">
-                      <p>{activity.action}</p>
-                      <small>{activity.time}</small>
-                    </div>
+        <div className="card-grid">
+          {schedules.map(schedule => (
+            <div key={schedule.doctor.id} className="card">
+              <h3>{schedule.doctor.name}</h3>
+              <div className="schedule-list">
+                {schedule.schedules.map(sched => (
+                  <div key={sched.id} className="schedule-item">
+                    <p><strong>{sched.day}:</strong></p>
+                    <p>{sched.slots.join(', ')}</p>
                   </div>
                 ))}
               </div>
             </div>
-
-            <div className="quick-stats">
-              <h3>Department Overview</h3>
-              <div className="department-stats">
-                <div className="dept-item">
-                  <span>Doctors</span>
-                  <strong>{stats.totalDoctors}</strong>
-                </div>
-                <div className="dept-item">
-                  <span>Receptionists</span>
-                  <strong>{stats.totalEmployees - stats.totalDoctors}</strong>
-                </div>
-                <div className="dept-item">
-                  <span>Lab Technicians</span>
-                  <strong>3</strong>
-                </div>
-                <div className="dept-item">
-                  <span>Active Appointments</span>
-                  <strong>{stats.todayAppointments}</strong>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="action-buttons">
-            <button onClick={() => setView('employees')} className="btn-primary">
-              Manage Employees
-            </button>
-            <button onClick={() => setView('all-appointments')} className="btn-secondary">
-              View All Appointments
-            </button>
-            <button className="btn-secondary">Generate Reports</button>
-          </div>
-        </>
+          ))}
+          {schedules.length === 0 && <p>No schedules found</p>}
+        </div>
       )}
+      
+      <button 
+        onClick={() => setView('dashboard')} 
+        className="btn-secondary"
+        style={{ marginTop: '20px' }}
+      >
+        Back to Dashboard
+      </button>
     </div>
   );
+
+  const AllAppointmentsView = () => (
+    <div className="section">
+      <h2>🏥 All Appointments</h2>
+      
+      {loading ? (
+        <p>Loading appointments...</p>
+      ) : (
+        <div className="card-grid">
+          {appointments.map(apt => (
+            <div key={apt.id} className="card">
+              <h3>{apt.patient_name}</h3>
+              <p><strong>Doctor:</strong> Dr. {apt.doctor_name}</p>
+              <p><strong>Date:</strong> {apt.date}</p>
+              <p><strong>Time:</strong> {apt.time}</p>
+              <p><strong>Status:</strong> <span className={`status ${apt.status}`}>{apt.status}</span></p>
+            </div>
+          ))}
+          {appointments.length === 0 && <p>No appointments found</p>}
+        </div>
+      )}
+      
+      <button 
+        onClick={() => setView('dashboard')} 
+        className="btn-secondary"
+        style={{ marginTop: '20px' }}
+      >
+        Back to Dashboard
+      </button>
+    </div>
+  );
+
+  // Render based on current view
+  switch(view) {
+    case 'employees':
+      return <EmployeesView />;
+    case 'doctor-schedules':
+      return <DoctorSchedulesView />;
+    case 'all-appointments':
+      return <AllAppointmentsView />;
+    default:
+      return <MainDashboard />;
+  }
 };

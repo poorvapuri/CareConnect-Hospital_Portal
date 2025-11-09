@@ -1,19 +1,27 @@
 import pool from '../config/database.js';
 
 export class LabTest {
-  static async create(labTestData) {
-    const { patientId, testName, date, paymentStatus = 'Pending' } = labTestData;
-    
-    const query = `
-      INSERT INTO lab_tests (patient_id, test_name, date, payment_status, status)
-      VALUES ($1, $2, $3, $4, 'Pending')
-      RETURNING *
-    `;
-    
-    const values = [patientId, testName, date, paymentStatus];
-    const result = await pool.query(query, values);
-    return result.rows[0];
-  }
+// Update the create method to include notes and suggestedAmount
+static async create(labTestData) {
+  const { 
+    patientId, 
+    testName, 
+    date, 
+    paymentStatus = 'Pending',
+    notes = '',
+    suggestedAmount = 0
+  } = labTestData;
+  
+  const query = `
+    INSERT INTO lab_tests (patient_id, test_name, date, payment_status, status, notes, suggested_amount)
+    VALUES ($1, $2, $3, $4, 'Pending', $5, $6)
+    RETURNING *
+  `;
+  
+  const values = [patientId, testName, date, paymentStatus, notes, suggestedAmount];
+  const result = await pool.query(query, values);
+  return result.rows[0];
+}
 
   static async findAll(filters = {}) {
     let query = `
