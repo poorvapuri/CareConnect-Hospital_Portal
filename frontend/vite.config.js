@@ -5,12 +5,11 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
+    host: true,
     open: true,
-    proxy: {
-      '/api': {
-        target: 'http://localhost:5000',
-        changeOrigin: true
-      }
-    }
+    strictPort: false, // Will try next port if 5173 is busy
+  },
+  resolve: {
+    extensions: ['.js', '.jsx', '.ts', '.tsx']
   }
 })

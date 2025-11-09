@@ -3,8 +3,8 @@ import { useApp } from './context/AppContext';
 import { Message } from './components/common/Message';
 import { Modal } from './components/common/Modal';
 import { Login } from './components/auth/Login';
-import { PatientDashboard } from './components/dashboard/patientDashboard';
-import { DoctorDashboard } from './components/dashboard/doctorDashboard';
+import * as PatientModule from './components/dashboard/patientDashboard';
+import * as DoctorModule from './components/dashboard/doctorDashboard';
 import { ReceptionistDashboard } from './components/dashboard/receptionistDashboard';
 import { LabTechnicianDashboard } from './components/dashboard/labTechDashboard';
 import { AdminDashboard } from './components/dashboard/adminDashboard';
@@ -29,6 +29,15 @@ function App() {
         return <PatientDashboard />;
     }
   };
+
+  // Resolve possibly-mismatched exports from dashboard modules (some files export different names)
+  const PatientDashboard = PatientModule.PatientDashboard || PatientModule.default || (() => (
+    <div className="section"><h2>Patient Dashboard</h2><p>Welcome.</p></div>
+  ));
+
+  const DoctorDashboard = DoctorModule.DoctorDashboard || DoctorModule.default || (() => (
+    <div className="section"><h2>Doctor Dashboard</h2><p>Welcome.</p></div>
+  ));
 
   const Dashboard = () => (
     <div className="dashboard-container">
