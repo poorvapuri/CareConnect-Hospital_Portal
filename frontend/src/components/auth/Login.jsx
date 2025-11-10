@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
+import { apiService } from '../../services/api';
 
 export const Login = () => {
-  const { handleLogin, handleSignup, showMessage } = useApp();
+  const { handleLogin, showMessage } = useApp();
   const [isSignup, setIsSignup] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -13,59 +14,71 @@ export const Login = () => {
     medicalHistory: '',
     role: 'Patient'
   });
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
     
-    if (isSignup) {
-      if (formData.password !== formData.confirmPassword) {
-        showMessage('error', 'Passwords do not match!');
-        return;
-      }
-      
-      try {
-        let result;
+    console.log('🚀 Form submission started');
+    console.log('📋 Form data:', formData);
+    console.log('📝 Is signup:', isSignup);
+    
+    try {
+      if (isSignup) {
+        console.log('🏥 Processing signup...');
         
-        if (formData.role === 'Patient') {
-          // Register as patient
-          result = await fetch('/api/auth/register/patient', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              name: formData.name,
-              email: formData.email,
-              password: formData.password,
-              contactNumber: formData.contactNumber,
-              medicalHistory: formData.medicalHistory
-            })
-          });
-        } else {
-          // Register as employee (this would typically be done by admin in a separate flow)
-          result = await fetch('/api/auth/register/employee', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              name: formData.name,
-              email: formData.email,
-              password: formData.password,
-              role: formData.role
-            })
-          });
+        if (formData.password !== formData.confirmPassword) {
+          console.log('❌ Passwords do not match');
+          showMessage('error', 'Passwords do not match!');
+          setLoading(false);
+          return;
         }
         
-        const data = await result.json();
-        
-        if (result.ok) {
-          showMessage('success', 'Account created successfully!');
+        if (formData.role === 'Patient') {
+          console.log('👤 Registering as patient...');
           
-          // Auto-login for patient
-          if (formData.role === 'Patient') {
+          const userData = {
+            name: formData.name,
+            email: formData.email,
+            password: formData.password,
+            contactNumber: formData.contactNumber,
+            medicalHistory: formData.medicalHistory
+          };
+          
+          console.log('📋 Patient registration data:', userData);
+          
+          try {
+            const user = await apiService.registerPatient(userData);
+            console.log('✅ Patient registered successfully:', user);
+            
+            showMessage('success', 'Account created successfully!');
+            
+            // Auto-login after signup
+            console.log('🔐 Auto-login after signup...');
             await handleLogin(formData.email, formData.password);
-          } else {
+            
+          } catch (error) {
+            console.error('❌ Patient registration error:', error);
+            showMessage('error', error.message || 'Patient registration failed');
+          }
+        } else {
+          console.log('👥 Registering as employee...');
+          
+          const employeeData = {
+            name: formData.name,
+            email: formData.email,
+            password: formData.password,
+            role: formData.role
+          };
+          
+          console.log('📋 Employee registration data:', employeeData);
+          
+          try {
+            const user = await apiService.registerEmployee(employeeData);
+            console.log('✅ Employee registered successfully:', user);
+            
+            showMessage('success', 'Account created successfully!');
             setIsSignup(false);
             setFormData(prev => ({
               ...prev,
@@ -73,15 +86,22 @@ export const Login = () => {
               password: '',
               confirmPassword: ''
             }));
+            
+          } catch (error) {
+            console.error('❌ Employee registration error:', error);
+            showMessage('error', error.message || 'Employee registration failed');
           }
-        } else {
-          showMessage('error', data.error || 'Registration failed');
         }
-      } catch (error) {
-        showMessage('error', 'Registration failed: ' + error.message);
+      } else {
+        console.log('🔐 Processing login...');
+        await handleLogin(formData.email, formData.password);
       }
-    } else {
-      await handleLogin(formData.email, formData.password);
+    } catch (error) {
+      console.error('❌ Authentication error:', error);
+      showMessage('error', error.message || 'Authentication failed');
+    } finally {
+      console.log('🏁 Form submission completed');
+      setLoading(false);
     }
   };
 
@@ -102,13 +122,21 @@ export const Login = () => {
                 type="text"
                 placeholder="Full Name"
                 value={formData.name}
-                onChange={(e) => setFormData({...formData, name: e.target.value})}
+                onChange={(e) => {
+                  console.log('✏️ Name changed:', e.target.value);
+                  setFormData({...formData, name: e.target.value});
+                }}
                 required
+                disabled={loading}
               />
               
               <select
                 value={formData.role}
-                onChange={(e) => setFormData({...formData, role: e.target.value})}
+                onChange={(e) => {
+                  console.log('🔄 Role changed:', e.target.value);
+                  setFormData({...formData, role: e.target.value});
+                }}
+                disabled={loading}
               >
                 <option value="Patient">Patient</option>
                 <option value="Doctor">Doctor</option>
@@ -122,14 +150,22 @@ export const Login = () => {
                     type="tel"
                     placeholder="Contact Number"
                     value={formData.contactNumber}
-                    onChange={(e) => setFormData({...formData, contactNumber: e.target.value})}
+                    onChange={(e) => {
+                      console.log('📞 Contact number changed:', e.target.value);
+                      setFormData({...formData, contactNumber: e.target.value});
+                    }}
                     required
+                    disabled={loading}
                   />
                   
                   <textarea
                     placeholder="Medical History (Optional)"
                     value={formData.medicalHistory}
-                    onChange={(e) => setFormData({...formData, medicalHistory: e.target.value})}
+                    onChange={(e) => {
+                      console.log('📝 Medical history changed:', e.target.value);
+                      setFormData({...formData, medicalHistory: e.target.value});
+                    }}
+                    disabled={loading}
                   />
                 </>
               )}
@@ -140,16 +176,24 @@ export const Login = () => {
             type="email"
             placeholder="Email"
             value={formData.email}
-            onChange={(e) => setFormData({...formData, email: e.target.value})}
+            onChange={(e) => {
+              console.log('📧 Email changed:', e.target.value);
+              setFormData({...formData, email: e.target.value});
+            }}
             required
+            disabled={loading}
           />
           
           <input
             type="password"
             placeholder="Password"
             value={formData.password}
-            onChange={(e) => setFormData({...formData, password: e.target.value})}
+            onChange={(e) => {
+              console.log('🔒 Password changed');
+              setFormData({...formData, password: e.target.value});
+            }}
             required
+            disabled={loading}
           />
           
           {isSignup && (
@@ -157,19 +201,24 @@ export const Login = () => {
               type="password"
               placeholder="Confirm Password"
               value={formData.confirmPassword}
-              onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
+              onChange={(e) => {
+                console.log('🔒 Confirm password changed');
+                setFormData({...formData, confirmPassword: e.target.value});
+              }}
               required
+              disabled={loading}
             />
           )}
           
-          <button type="submit" className="btn-primary">
-            {isSignup ? 'Sign Up' : 'Sign In'}
+          <button type="submit" className="btn-primary" disabled={loading}>
+            {loading ? 'Processing...' : (isSignup ? 'Sign Up' : 'Sign In')}
           </button>
           
           <button
             type="button"
             className="btn-link"
             onClick={() => {
+              console.log('🔄 Toggling signup/login');
               setIsSignup(!isSignup);
               setFormData({
                 name: '',
@@ -181,6 +230,7 @@ export const Login = () => {
                 role: 'Patient'
               });
             }}
+            disabled={loading}
           >
             {isSignup ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
           </button>
@@ -188,9 +238,9 @@ export const Login = () => {
           {!isSignup && (
             <div className="test-credentials">
               <p>Test Credentials:</p>
-              <small>Patient: patient@care.com / password123</small>
-              <small>Doctor: doctor@care.com / password123</small>
-              <small>Admin: admin@care.com / password123</small>
+              <small>Patient: patient@care.com / patient123</small>
+              <small>Doctor: doctor@care.com / doctor123</small>
+              <small>Admin: admin@care.com / admin123</small>
             </div>
           )}
         </form>

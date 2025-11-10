@@ -58,6 +58,24 @@ class ApiService {
     });
   }
 
+  // Add registerPatient method that uses the existing signup endpoint
+  async registerPatient(userData) {
+    // For patient registration, use the same signup endpoint
+    // but ensure role is set to Patient
+    const patientData = {
+      ...userData,
+      role: 'Patient'
+    };
+    return await this.signup(patientData);
+  }
+
+  // Add registerEmployee method for admin use
+  async registerEmployee(employeeData) {
+    // For employee registration, use the same signup endpoint
+    // with appropriate role (Doctor, Receptionist, Lab Technician)
+    return await this.signup(employeeData);
+  }
+
   // Appointment endpoints
   async getAppointments(filters = {}) {
     const params = new URLSearchParams(filters).toString();
