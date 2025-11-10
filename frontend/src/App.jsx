@@ -487,7 +487,7 @@ function App() {
       <Message />
       <Modal />
       {view === 'login' || !currentUser ? <Login /> : <Dashboard />}
-      <Chatbot />
+      {currentUser?.role === "Patient" && <Chatbot />}
     </div>
   );
 }

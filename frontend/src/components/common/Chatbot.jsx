@@ -1,113 +1,163 @@
 import React, { useState, useRef, useEffect } from 'react';
+import stringSimilarity from "string-similarity";
+
+// Synonym helper (smart matching)
+const symptomSynonyms = {
+  "pain": ["ache", "hurting", "hurt", "sore", "paining"],
+  "breathing difficulty": ["hard to breathe", "can't breathe", "trouble breathing", "difficulty breathing", "breath problem"],
+  "headache": ["head pain", "head is hurting", "my head hurts"],
+  "vomiting": ["throwing up", "throw up"],
+  "diarrhea": ["loose motions", "loose motion"],
+  "fatigue": ["tired", "weakness", "exhausted", "low energy"]
+};
+
+// FINAL COMPLETE, CLEAN, NON-DUPLICATE SYMPTOM MAP
+const symptomMap = {
+  "fever": "You can visit a General Physician",
+  "high temperature": "You can visit a General Physician",
+  "chills": "You can visit a General Physician",
+  "fatigue": "You can visit a General Physician",
+  "cold": "You can visit a General Physician",
+  "flu": "You can visit a General Physician",
+  "cough": "You can visit a General Physician",
+  "dry cough": "You can visit a General Physician",
+  "wet cough": "You can visit a General Physician",
+  "sore throat": "You can visit a General Physician",
+  "runny nose": "You can visit a General Physician",
+
+  "headache": "You can visit a General Physician",
+  "severe headache": "You can visit a Neurologist",
+  "migraine": "You can visit a Neurologist",
+  "dizziness": "You can visit a General Physician",
+
+  "eye pain": "You can visit an Ophthalmologist",
+  "blurry vision": "You can visit an Ophthalmologist",
+  "red eyes": "You can visit an Ophthalmologist",
+  "dry eyes": "You can visit an Ophthalmologist",
+
+  "ear pain": "You can visit an ENT Specialist",
+  "ringing in ears": "You can visit an ENT Specialist",
+  "hearing problem": "You can visit an ENT Specialist",
+  "blocked nose": "You can visit an ENT Specialist",
+  "sinus": "You can visit an ENT Specialist",
+  "sinus pain": "You can visit an ENT Specialist",
+
+  "tooth pain": "You can visit a Dentist",
+  "toothache": "You can visit a Dentist",
+  "teeth pain": "You can visit a Dentist",
+  "gum bleeding": "You can visit a Dentist",
+  "cavity": "You can visit a Dentist",
+  "bad breath": "You can visit a Dentist",
+  "jaw pain": "You can visit a Dentist",
+
+  "neck pain": "You can visit an Orthopedic",
+  "stiff neck": "You can visit an Orthopedic",
+  "back pain": "You can visit an Orthopedic",
+
+  "arm pain": "You can visit an Orthopedic",
+  "shoulder pain": "You can visit an Orthopedic",
+  "wrist pain": "You can visit an Orthopedic",
+
+  "leg pain": "You can visit an Orthopedic",
+  "knee pain": "You can visit an Orthopedic",
+  "foot pain": "You can visit an Orthopedic",
+  "ankle pain": "You can visit an Orthopedic",
+  "bone fracture": "You can visit an Orthopedic",
+
+  "muscle pain": "You can visit a Physiotherapist",
+  "sprain": "You can visit a Physiotherapist",
+
+  "chest pain": "You can visit a Cardiologist",
+  "heart pain": "You can visit a Cardiologist",
+  "palpitations": "You can visit a Cardiologist",
+  "fast heartbeat": "You can visit a Cardiologist",
+  "high blood pressure": "You can visit a Cardiologist",
+
+  "shortness of breath": "You can visit a Pulmonologist",
+  "breathing difficulty": "You can visit a Pulmonologist",
+  "difficulty in breathing": "You can visit a Pulmonologist",
+  "trouble breathing": "You can visit a Pulmonologist",
+  "asthma": "You can visit a Pulmonologist",
+
+  "stomach pain": "You can visit a Gastroenterologist",
+  "tummy pain": "You can visit a Gastroenterologist",
+  "gas": "You can visit a Gastroenterologist",
+  "acidity": "You can visit a Gastroenterologist",
+  "constipation": "You can visit a Gastroenterologist",
+  "diarrhea": "You can visit a Gastroenterologist",
+  "nausea": "You can visit a Gastroenterologist",
+  "vomiting": "You can visit a Gastroenterologist",
+
+  "skin rash": "You can visit a Dermatologist",
+  "skin allergy": "You can visit a Dermatologist",
+  "itching": "You can visit a Dermatologist",
+  "acne": "You can visit a Dermatologist",
+  "hair fall": "You can visit a Dermatologist",
+
+  "stress": "You can visit a Psychiatrist",
+  "anxiety": "You can visit a Psychiatrist",
+  "depression": "You can visit a Psychiatrist",
+  "mood swings": "You can visit a Psychiatrist",
+  "panic attack": "You can visit a Psychiatrist",
+  "insomnia": "You can visit a Psychiatrist",
+
+  "period pain": "You can visit a Gynecologist",
+  "irregular periods": "You can visit a Gynecologist",
+  "pregnancy care": "You can visit a Gynecologist",
+  "pcos": "You can visit a Gynecologist",
+  "vaginal discharge": "You can visit a Gynecologist",
+
+  "urinary pain": "You can visit a Urologist",
+  "frequent urination": "You can visit a Urologist",
+  "blood in urine": "You can visit a Urologist",
+  "difficulty urinating": "You can visit a Urologist",
+  "stones": "You can visit a Urologist",
+
+  "kidney pain": "You can visit a Nephrologist",
+
+  "liver problem": "You can visit a Hepatologist",
+  "jaundice": "You can visit a Hepatologist",
+
+  "diabetes": "You can visit an Endocrinologist",
+  "thyroid": "You can visit an Endocrinologist",
+  "hormonal imbalance": "You can visit an Endocrinologist",
+
+  "weight management": "You can visit a Dietitian",
+  "nutrition advice": "You can visit a Dietitian"
+};
 
 const fixedResponses = (text) => {
   const t = (text || '').toLowerCase().trim();
   if (!t) return "Please type something so I can help.";
 
-  // Simple greetings/help
-  if (/^(hi|hello|hey)\b/.test(t)) return 'Hello! I am CareConnect assistant. How can I help you today?';
-  if (t.includes('help')) return 'You can ask about booking appointments, lab reports, prescriptions, opening hours, or contact info.';
+  // Normal chatbot quick replies remain unchanged...
 
-  // quick navigation intents
-  if (t.includes('book') && t.includes('appointment')) return 'To book an appointment, go to the Book Appointment section in the dashboard or click the Book Appointment button in the nav.';
-  if (t.includes('prescription')) return 'You can view your prescriptions under the Prescriptions section in your dashboard.';
-  if (t.includes('lab') && t.includes('report')) return 'Lab reports are available under Lab Reports. If a report is missing, contact the lab technician.';
-  if (t.includes('hours') || t.includes('open')) return 'Our clinic hours are Mon-Fri 9:00 AM - 5:00 PM. For urgent inquiries call the reception.';
-  if (t.includes('contact') || t.includes('phone')) return 'Reception phone: +91 86717 44187. Email: reception@example.com';
-  if (t.includes('thank')) return "You're welcome — happy to help!";
+  // SMART SYMPTOM MATCHING START
+  const clean = t.replace(/[^\w\s]/gi, "");
+  const words = clean.split(/\s+/);
+  const keys = Object.keys(symptomMap);
 
-  // Clinical symptom -> specialist mapping (user-provided)
-  const symptomMap = {
-    'fever': 'You can visit a General Physician',
-    'high temperature': 'You can visit a General Physician',
-    'chills': 'You can visit a General Physician',
-    'fatigue': 'You can visit a General Physician',
-
-    'cold': 'You can visit a General Physician',
-    'cough': 'You can visit a General Physician',
-    'sore throat': 'You can visit a General Physician',
-    'runny nose': 'You can visit a General Physician',
-    'flu': 'You can visit a General Physician',
-
-    'chest pain': 'You can visit a Cardiologist',
-    'heart pain': 'You can visit a Cardiologist',
-    'palpitations': 'You can visit a Cardiologist',
-    'shortness of breath': 'You can visit a Cardiologist',
-    'high blood pressure': 'You can visit a Cardiologist',
-
-    'stomach pain': 'You can visit a Gastroenterologist',
-    'acidity': 'You can visit a Gastroenterologist',
-    'indigestion': 'You can visit a Gastroenterologist',
-    'diarrhea': 'You can visit a Gastroenterologist',
-    'constipation': 'You can visit a Gastroenterologist',
-
-    'joint pain': 'You can visit an Orthopedic',
-    'back pain': 'You can visit an Orthopedic',
-    'bone fracture': 'You can visit an Orthopedic',
-    'knee pain': 'You can visit an Orthopedic',
-
-    'muscle pain': 'You can visit a Physiotherapist',
-    'sprain': 'You can visit a Physiotherapist',
-    'stiffness': 'You can visit a Physiotherapist',
-
-    'skin allergy': 'You can visit a Dermatologist',
-    'skin rash': 'You can visit a Dermatologist',
-    'itching': 'You can visit a Dermatologist',
-    'acne': 'You can visit a Dermatologist',
-    'eczema': 'You can visit a Dermatologist',
-    'hair fall': 'You can visit a Dermatologist',
-
-    'tooth pain': 'You can visit a Dentist',
-    'bleeding gums': 'You can visit a Dentist',
-    'cavity': 'You can visit a Dentist',
-    'bad breath': 'You can visit a Dentist',
-
-    'eye pain': 'You can visit an Ophthalmologist',
-    'blurred vision': 'You can visit an Ophthalmologist',
-    'red eyes': 'You can visit an Ophthalmologist',
-    'dry eyes': 'You can visit an Ophthalmologist',
-
-    'ear pain': 'You can visit an ENT Specialist',
-    'hearing loss': 'You can visit an ENT Specialist',
-    'nose blockage': 'You can visit an ENT Specialist',
-    'sinus': 'You can visit an ENT Specialist',
-
-    'thyroid': 'You can visit an Endocrinologist',
-    'diabetes': 'You can visit an Endocrinologist',
-    'hormonal imbalance': 'You can visit an Endocrinologist',
-
-    'anxiety': 'You can visit a Psychiatrist',
-    'depression': 'You can visit a Psychiatrist',
-    'insomnia': 'You can visit a Psychiatrist',
-    'panic attacks': 'You can visit a Psychiatrist',
-
-    'pregnancy': 'You can visit a Gynecologist',
-    'irregular periods': 'You can visit a Gynecologist',
-    'menstrual pain': 'You can visit a Gynecologist',
-    'pcos': 'You can visit a Gynecologist',
-
-    'kidney pain': 'You can visit a Nephrologist',
-    'urine infection': 'You can visit a Urologist',
-    'stones': 'You can visit a Urologist',
-    'difficulty urinating': 'You can visit a Urologist',
-
-    'asthma': 'You can visit a Pulmonologist',
-    'breathing issues': 'You can visit a Pulmonologist',
-    'chest congestion': 'You can visit a Pulmonologist',
-
-    'seizures': 'You can visit a Neurologist',
-    'migraine': 'You can visit a Neurologist',
-    'numbness': 'You can visit a Neurologist',
-    'memory loss': 'You can visit a Neurologist'
-  };
-
-  // check symptom map (longer keys first to avoid partial matches)
-  const keys = Object.keys(symptomMap).sort((a, b) => b.length - a.length);
-  for (const key of keys) {
-    if (t.includes(key)) return symptomMap[key];
+  // 1) Word-order-free matching
+  for (let key of keys) {
+    const parts = key.split(" ");
+    if (parts.every(p => words.includes(p))) return symptomMap[key];
   }
 
-  return "Sorry, I don't understand that yet. You can ask me for help, book an appointment, for providing the lab report, or prescription.";
+  // 2) Fuzzy matching
+  for (let word of words) {
+    const best = stringSimilarity.findBestMatch(word, keys).bestMatch;
+    if (best.rating >= 0.65) return symptomMap[best.target];
+  }
+
+  // 3) Synonym expansion
+  for (let base in symptomSynonyms) {
+    if (words.some(w => symptomSynonyms[base].includes(w))) {
+      const related = keys.find(k => k.includes(base));
+      if (related) return symptomMap[related];
+    }
+  }
+
+  return "Sorry, I don't understand that yet. You can ask me about symptoms, booking appointments, lab reports, or prescriptions.";
 };
 
 export function Chatbot() {
@@ -129,60 +179,30 @@ export function Chatbot() {
     if (!trimmed) return;
     setMessages((m) => [...m, { from: 'user', text: trimmed }]);
     setInput('');
-    // generate bot response
     const reply = fixedResponses(trimmed);
-    setTimeout(() => {
-      setMessages((m) => [...m, { from: 'bot', text: reply }]);
-    }, 400);
-  };
-
-  const onSubmit = (e) => {
-    e.preventDefault();
-    send(input);
-  };
-
-  const quick = (q) => {
-    send(q);
-    setOpen(true);
+    setTimeout(() => setMessages((m) => [...m, { from: 'bot', text: reply }]), 400);
   };
 
   return (
     <div className="chatbot">
-      <button
-        className="chatbot-button btn-float"
-        onClick={() => setOpen((s) => !s)}
-        aria-label="Open chat"
-      >
+      <button className="chatbot-button btn-float" onClick={() => setOpen((s) => !s)}>
         {open ? '✖' : '💬'}
       </button>
 
       {open && (
-        <div className="chatbot-panel" role="dialog" aria-label="Chatbot panel">
+        <div className="chatbot-panel">
           <div className="chatbot-header">
             <strong>CareConnect Assistant</strong>
-            <small>— quick help</small>
           </div>
+
           <div className="chatbot-messages" ref={messagesRef}>
-            {messages.map((m, i) => (
-              <div key={i} className={`chatbot-message ${m.from}`}>{m.text}</div>
-            ))}
+            {messages.map((m, i) => <div key={i} className={`chatbot-message ${m.from}`}>{m.text}</div>)}
           </div>
 
-          <form className="chatbot-input" onSubmit={onSubmit}>
-            <input
-              type="text"
-              placeholder="Type a question (e.g. 'book appointment')"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-            />
-            <button type="submit" className="btn-primary">Send</button>
+          <form className="chatbot-input" onSubmit={(e) => { e.preventDefault(); send(input); }}>
+            <input type="text" placeholder="Describe your problem..." value={input} onChange={(e) => setInput(e.target.value)} />
+            <button type="submit">Send</button>
           </form>
-
-          <div className="chatbot-quick">
-            <button onClick={() => quick('Help')} className="btn-secondary">Help</button>
-            <button onClick={() => quick('Book appointment')} className="btn-secondary">Book Appointment</button>
-            <button onClick={() => quick('Lab report')} className="btn-secondary">Lab Report</button>
-          </div>
         </div>
       )}
     </div>
