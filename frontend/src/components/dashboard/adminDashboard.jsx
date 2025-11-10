@@ -13,13 +13,40 @@ export const AdminDashboard = () => {
     name: '',
     email: '',
     password: '',
-    role: 'Doctor'
+    role: 'Doctor',
+    specialization: '' // Added specialization field
   });
+  const [specializations, setSpecializations] = useState([]); // Added specializations state
+
+  // Fetch specializations when component mounts or role changes to Doctor
+  useEffect(() => {
+    if (formData.role === 'Doctor') {
+      fetchSpecializations();
+    }
+  }, [formData.role]);
 
   // Fetch data based on current view
   useEffect(() => {
     fetchData();
   }, [view]);
+
+  const fetchSpecializations = async () => {
+    try {
+      const specs = await apiService.getSpecializations();
+      setSpecializations(specs);
+      
+      // Set default specialization if none selected
+      if (!formData.specialization && specs.length > 0) {
+        setFormData(prev => ({
+          ...prev,
+          specialization: specs[0]
+        }));
+      }
+    } catch (error) {
+      console.error('Error fetching specializations:', error);
+      showMessage('error', 'Failed to load doctor specializations');
+    }
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -89,24 +116,30 @@ export const AdminDashboard = () => {
     setLoading(true);
     
     try {
-      const response = await fetch('/api/auth/register/employee', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('careconnect_token')}`
-        },
-        body: JSON.stringify(formData)
-      });
-      
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to add employee');
+      // Validate form for doctors
+      if (formData.role === 'Doctor' && !formData.specialization) {
+        throw new Error('Specialization is required for doctors');
       }
+      
+      const employeeData = {
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+        role: formData.role,
+        ...(formData.role === 'Doctor' && { specialization: formData.specialization })
+      };
+      
+      const user = await apiService.registerEmployee(employeeData);
       
       showMessage('success', 'Employee added successfully');
       setShowEmployeeForm(false);
-      setFormData({ name: '', email: '', password: '', role: 'Doctor' });
+      setFormData({ 
+        name: '', 
+        email: '', 
+        password: '', 
+        role: 'Doctor',
+        specialization: specializations.length > 0 ? specializations[0] : ''
+      });
       fetchEmployees();
     } catch (error) {
       showMessage('error', error.message);
@@ -196,7 +229,14 @@ export const AdminDashboard = () => {
               <label>Role</label>
               <select
                 value={formData.role}
-                onChange={(e) => setFormData({...formData, role: e.target.value})}
+                onChange={(e) => {
+                  const newRole = e.target.value;
+                  setFormData({
+                    ...formData, 
+                    role: newRole,
+                    specialization: newRole === 'Doctor' ? (specializations[0] || '') : ''
+                  });
+                }}
                 disabled={loading}
               >
                 <option value="Doctor">Doctor</option>
@@ -204,6 +244,24 @@ export const AdminDashboard = () => {
                 <option value="Lab Technician">Lab Technician</option>
               </select>
             </div>
+            
+            {/* Show specialization dropdown for Doctors */}
+            {formData.role === 'Doctor' && (
+              <div className="form-group">
+                <label>Specialization</label>
+                <select
+                  value={formData.specialization}
+                  onChange={(e) => setFormData({...formData, specialization: e.target.value})}
+                  required
+                  disabled={loading}
+                >
+                  <option value="">Select Specialization</option>
+                  {specializations.map((spec, index) => (
+                    <option key={index} value={spec}>{spec}</option>
+                  ))}
+                </select>
+              </div>
+            )}
             
             <div className="form-actions">
               <button type="submit" className="btn-primary" disabled={loading}>
@@ -228,6 +286,9 @@ export const AdminDashboard = () => {
             <h3>{emp.name}</h3>
             <p><strong>Email:</strong> {emp.email}</p>
             <p><strong>Role:</strong> {emp.role}</p>
+            {emp.role === 'Doctor' && emp.specialization && (
+              <p><strong>Specialization:</strong> {emp.specialization}</p>
+            )}
           </div>
         ))}
         {employees.length === 0 && !loading && <p>No employees found</p>}

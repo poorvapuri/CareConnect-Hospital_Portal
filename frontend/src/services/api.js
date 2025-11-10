@@ -51,29 +51,25 @@ class ApiService {
     return data;
   }
 
-  async signup(userData) {
-    return await this.request('/auth/signup', {
+  // Patient registration
+  async registerPatient(userData) {
+    return await this.request('/auth/register/patient', {
       method: 'POST',
       body: JSON.stringify(userData)
     });
   }
 
-  // Add registerPatient method that uses the existing signup endpoint
-  async registerPatient(userData) {
-    // For patient registration, use the same signup endpoint
-    // but ensure role is set to Patient
-    const patientData = {
-      ...userData,
-      role: 'Patient'
-    };
-    return await this.signup(patientData);
+  // Employee registration (for Admin)
+  async registerEmployee(employeeData) {
+    return await this.request('/auth/register/employee', {
+      method: 'POST',
+      body: JSON.stringify(employeeData)
+    });
   }
 
-  // Add registerEmployee method for admin use
-  async registerEmployee(employeeData) {
-    // For employee registration, use the same signup endpoint
-    // with appropriate role (Doctor, Receptionist, Lab Technician)
-    return await this.signup(employeeData);
+  // Get available specializations
+  async getSpecializations() {
+    return await this.request('/auth/specializations');
   }
 
   // Appointment endpoints

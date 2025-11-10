@@ -2,6 +2,7 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import { User } from '../models/user.js';
 import { Patient } from '../models/patient.js';
+import { Doctor } from '../models/doctor.js';
 
 const router = express.Router();
 
@@ -27,65 +28,6 @@ router.post('/login', async (req, res) => {
     );
     
     res.json({
-      token,
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role
-      }
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Signup endpoint (for backward compatibility)
-router.post('/signup', async (req, res) => {
-  try {
-    const { name, email, password, role = 'Patient', contactNumber, medicalHistory } = req.body;
-    
-    // Validate required fields
-    if (!name || !email || !password) {
-      return res.status(400).json({ error: 'Name, email, and password are required' });
-    }
-    
-    // Check if user already exists
-    const existingUser = await User.findByEmail(email);
-    if (existingUser) {
-      return res.status(400).json({ error: 'User with this email already exists' });
-    }
-    
-    // Create user
-    const user = await User.create({
-      name,
-      email,
-      password,
-      role
-    });
-    
-    // If patient, create patient record
-    if (role === 'Patient') {
-      if (!contactNumber) {
-        return res.status(400).json({ error: 'Contact number is required for patients' });
-      }
-      
-      await Patient.create({
-        userId: user.id,
-        contactNumber,
-        medicalHistory: medicalHistory || ''
-      });
-    }
-    
-    // Generate JWT token
-    const token = jwt.sign(
-      { userId: user.id, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: '24h' }
-    );
-    
-    res.status(201).json({
-      message: 'User created successfully',
       token,
       user: {
         id: user.id,
@@ -152,10 +94,10 @@ router.post('/register/patient', async (req, res) => {
   }
 });
 
-// Employee Registration Endpoint
+// Employee Registration Endpoint (for Admin)
 router.post('/register/employee', async (req, res) => {
   try {
-    const { name, email, password, role } = req.body;
+    const { name, email, password, role, specialization = null } = req.body;
     
     // Validate required fields
     if (!name || !email || !password || !role) {
@@ -182,15 +124,54 @@ router.post('/register/employee', async (req, res) => {
       role
     });
     
+    // If doctor, create doctor record with specialization
+    if (role === 'Doctor') {
+      if (!specialization) {
+        return res.status(400).json({ error: 'Specialization is required for doctors' });
+      }
+      
+      await Doctor.create({
+        userId: user.id,
+        specialization
+      });
+    }
+    
     res.status(201).json({
       message: 'Employee registered successfully',
       user: {
         id: user.id,
         name: user.name,
         email: user.email,
-        role: user.role
+        role: user.role,
+        ...(role === 'Doctor' && { specialization })
       }
     });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get available specializations
+router.get('/specializations', async (req, res) => {
+  try {
+    const specializations = [
+      'General Medicine',
+      'Cardiology',
+      'Neurology',
+      'Orthopedics',
+      'Pediatrics',
+      'Dermatology',
+      'Gynecology',
+      'Ophthalmology',
+      'ENT',
+      'Psychiatry',
+      'Dentistry',
+      'Radiology',
+      'Anesthesiology',
+      'Emergency Medicine'
+    ];
+    
+    res.json(specializations);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { apiService } from '../../services/api';
 
@@ -12,9 +12,36 @@ export const Login = () => {
     confirmPassword: '',
     contactNumber: '',
     medicalHistory: '',
-    role: 'Patient'
+    role: 'Patient',
+    specialization: '' // Added specialization field
   });
   const [loading, setLoading] = useState(false);
+  const [specializations, setSpecializations] = useState([]); // Added specializations state
+
+  // Fetch specializations when component mounts or role changes to Doctor
+  useEffect(() => {
+    if (formData.role === 'Doctor') {
+      fetchSpecializations();
+    }
+  }, [formData.role]);
+
+  const fetchSpecializations = async () => {
+    try {
+      const specs = await apiService.getSpecializations();
+      setSpecializations(specs);
+      
+      // Set default specialization if none selected
+      if (!formData.specialization && specs.length > 0) {
+        setFormData(prev => ({
+          ...prev,
+          specialization: specs[0]
+        }));
+      }
+    } catch (error) {
+      console.error('Error fetching specializations:', error);
+      showMessage('error', 'Failed to load doctor specializations');
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -69,7 +96,8 @@ export const Login = () => {
             name: formData.name,
             email: formData.email,
             password: formData.password,
-            role: formData.role
+            role: formData.role,
+            ...(formData.role === 'Doctor' && { specialization: formData.specialization })
           };
           
           console.log('📋 Employee registration data:', employeeData);
@@ -84,7 +112,8 @@ export const Login = () => {
               ...prev,
               email: '',
               password: '',
-              confirmPassword: ''
+              confirmPassword: '',
+              specialization: ''
             }));
             
           } catch (error) {
@@ -134,7 +163,11 @@ export const Login = () => {
                 value={formData.role}
                 onChange={(e) => {
                   console.log('🔄 Role changed:', e.target.value);
-                  setFormData({...formData, role: e.target.value});
+                  setFormData({
+                    ...formData, 
+                    role: e.target.value,
+                    specialization: e.target.value === 'Doctor' ? (specializations[0] || '') : ''
+                  });
                 }}
                 disabled={loading}
               >
@@ -143,6 +176,27 @@ export const Login = () => {
                 <option value="Receptionist">Receptionist</option>
                 <option value="Lab Technician">Lab Technician</option>
               </select>
+              
+              {/* Show specialization dropdown for Doctors */}
+              {formData.role === 'Doctor' && (
+                <div className="form-group">
+                  <label>Specialization</label>
+                  <select
+                    value={formData.specialization}
+                    onChange={(e) => {
+                      console.log('🎯 Specialization changed:', e.target.value);
+                      setFormData({...formData, specialization: e.target.value});
+                    }}
+                    required
+                    disabled={loading}
+                  >
+                    <option value="">Select Specialization</option>
+                    {specializations.map((spec, index) => (
+                      <option key={index} value={spec}>{spec}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
               
               {formData.role === 'Patient' && (
                 <>
@@ -227,7 +281,8 @@ export const Login = () => {
                 confirmPassword: '',
                 contactNumber: '',
                 medicalHistory: '',
-                role: 'Patient'
+                role: 'Patient',
+                specialization: ''
               });
             }}
             disabled={loading}
