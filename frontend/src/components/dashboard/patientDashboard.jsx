@@ -242,7 +242,7 @@ export const PatientDashboard = () => {
   if (view === 'available-doctors') {
     return (
       <div className="section">
-        <h2>Available Doctors</h2>
+        <h2>All Doctors</h2>
         <div className="doctors-grid">
           {doctors.map(doctor => (
             <div key={doctor.id} className="doctor-card">
@@ -475,7 +475,7 @@ export const PatientDashboard = () => {
           onClick={() => setView('available-doctors')}
         >
           <div className="stat-icon">👨‍⚕️</div>
-          <h3>Available Doctors</h3>
+          <h3>All Doctors</h3>
           <p className="stat-number">{doctors.length}</p>
         </div>
         

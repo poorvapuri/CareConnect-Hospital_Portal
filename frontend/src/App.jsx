@@ -440,7 +440,7 @@ function App() {
               onClick={() => setView('available-doctors')} 
               className={view === 'available-doctors' ? 'active' : ''}
             >
-              Available Doctors
+              All Doctors
             </button>
             <button 
               onClick={() => setView('book-appointment')} 
