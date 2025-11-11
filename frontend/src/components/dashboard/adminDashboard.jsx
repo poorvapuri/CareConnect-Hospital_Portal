@@ -1,7 +1,164 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
 import { apiService } from '../../services/api';
 
+// ===============================
+// ✅ Separate EmployeesView Component
+// ===============================
+const EmployeesView = ({
+  employees,
+  loading,
+  showEmployeeForm,
+  setShowEmployeeForm,
+  formData,
+  setFormData,
+  handleEmployeeSubmit,
+  specializations,
+  nameInputRef
+}) => (
+  <div className="section">
+    <h2>👥 Employee Management</h2>
+
+    {showEmployeeForm && (
+      <div className="form-container">
+        <h3>Add New Employee</h3>
+        <form onSubmit={handleEmployeeSubmit}>
+          <div className="form-group">
+            <label>Name</label>
+            <input
+              ref={nameInputRef}
+              type="text"
+              value={formData.name}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, name: e.target.value }))
+              }
+              required
+              disabled={loading}
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Email</label>
+            <input
+              type="email"
+              value={formData.email}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, email: e.target.value }))
+              }
+              required
+              disabled={loading}
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Password</label>
+            <input
+              type="password"
+              value={formData.password}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, password: e.target.value }))
+              }
+              required
+              disabled={loading}
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Role</label>
+            <select
+              value={formData.role}
+              onChange={(e) => {
+                const newRole = e.target.value;
+                setFormData((prev) => ({
+                  ...prev,
+                  role: newRole,
+                  specialization:
+                    newRole === 'Doctor' ? specializations[0] || '' : ''
+                }));
+              }}
+              disabled={loading}
+            >
+              <option value="Doctor">Doctor</option>
+              <option value="Receptionist">Receptionist</option>
+              <option value="Lab Technician">Lab Technician</option>
+            </select>
+          </div>
+
+          {formData.role === 'Doctor' && (
+            <div className="form-group">
+              <label>Specialization</label>
+              <select
+                value={formData.specialization}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    specialization: e.target.value
+                  }))
+                }
+                required
+                disabled={loading}
+              >
+                <option value="">Select Specialization</option>
+                {specializations.map((spec, index) => (
+                  <option key={index} value={spec}>
+                    {spec}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          <div className="form-actions">
+            <button type="submit" className="btn-primary" disabled={loading}>
+              {loading ? 'Adding...' : 'Add Employee'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowEmployeeForm(false)}
+              className="btn-secondary"
+              disabled={loading}
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    )}
+
+    <div className="card-grid">
+      {employees.map((emp) => (
+        <div key={emp.id} className="card">
+          <h3>{emp.name}</h3>
+          <p>
+            <strong>Email:</strong> {emp.email}
+          </p>
+          <p>
+            <strong>Role:</strong> {emp.role}
+          </p>
+          {emp.role === 'Doctor' && emp.specialization && (
+            <p>
+              <strong>Specialization:</strong> {emp.specialization}
+            </p>
+          )}
+        </div>
+      ))}
+      {employees.length === 0 && !loading && <p>No employees found</p>}
+      {loading && <p>Loading employees...</p>}
+    </div>
+
+    <button
+      onClick={() => setShowEmployeeForm(true)}
+      className="btn-primary"
+      disabled={loading}
+    >
+      ➕ Add New Employee
+    </button>
+  </div>
+);
+
+// ===============================
+// ✅ Main AdminDashboard Component
+// ===============================
 export const AdminDashboard = () => {
   const { view, setView, showMessage } = useApp();
   const [employees, setEmployees] = useState([]);
@@ -18,7 +175,16 @@ export const AdminDashboard = () => {
   });
   const [specializations, setSpecializations] = useState([]);
 
-  // ✅ Fetch doctor specializations when role changes to Doctor
+  const nameInputRef = useRef(null);
+
+  // ✅ Auto focus when form opens
+  useEffect(() => {
+    if (showEmployeeForm) {
+      nameInputRef.current?.focus();
+    }
+  }, [showEmployeeForm]);
+
+  // ✅ Fetch doctor specializations when role changes
   useEffect(() => {
     if (formData.role === 'Doctor') {
       fetchSpecializations();
@@ -26,27 +192,38 @@ export const AdminDashboard = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.role]);
 
-  // ✅ Fetch data when the 'view' changes
+  // ✅ Fetch main data when view changes
   useEffect(() => {
     fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view]);
 
-  // ✅ Fetch doctor specializations
-  const fetchSpecializations = async () => {
-    try {
-      const specs = await apiService.getSpecializations();
-      setSpecializations(specs);
-      if (!formData.specialization && specs.length > 0) {
-        setFormData(prev => ({ ...prev, specialization: specs[0] }));
-      }
-    } catch (error) {
-      console.error('Error fetching specializations:', error);
-      showMessage('error', 'Failed to load doctor specializations');
-    }
-  };
+ // ✅ Mocked specialization list (no API call)
+const fetchSpecializations = async () => {
+  const mockSpecializations = [
+    'General Medicine',
+    'Cardiology',
+    'Neurology',
+    'Orthopedics',
+    'Pediatrics',
+    'Dermatology',
+    'Gynecology',
+    'Ophthalmology',
+    'ENT',
+    'Psychiatry',
+    'Radiology',
+    'Urology',
+    'Oncology',
+    'Nephrology',
+    'Anesthesiology',
+    'Gastroenterology',
+    'Endocrinology'
+  ];
 
-  // ✅ Fetch data based on selected view
+  setSpecializations(mockSpecializations);
+};
+
+
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -60,39 +237,24 @@ export const AdminDashboard = () => {
     }
   };
 
-  // ✅ Use centralized API service
   const fetchEmployees = async () => {
-    try {
-      const empList = await apiService.getEmployees();
-      setEmployees(empList);
-    } catch (error) {
-      throw error;
-    }
+    const empList = await apiService.getEmployees();
+    setEmployees(empList);
   };
 
   const fetchSchedules = async () => {
-    try {
-      const data = await apiService.getSchedules();
-      setSchedules(data);
-    } catch (error) {
-      throw error;
-    }
+    const data = await apiService.getSchedules();
+    setSchedules(data);
   };
 
   const fetchAppointments = async () => {
-    try {
-      const data = await apiService.getAppointments();
-      setAppointments(data);
-    } catch (error) {
-      throw error;
-    }
+    const data = await apiService.getAppointments();
+    setAppointments(data);
   };
 
-  // ✅ Add new employee
   const handleEmployeeSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-
     try {
       if (formData.role === 'Doctor' && !formData.specialization) {
         throw new Error('Specialization is required for doctors');
@@ -103,7 +265,9 @@ export const AdminDashboard = () => {
         email: formData.email,
         password: formData.password,
         role: formData.role,
-        ...(formData.role === 'Doctor' && { specialization: formData.specialization })
+        ...(formData.role === 'Doctor' && {
+          specialization: formData.specialization
+        })
       };
 
       await apiService.registerEmployee(employeeData);
@@ -135,115 +299,50 @@ export const AdminDashboard = () => {
         </div>
         <div className="stat-card">
           <h3>Active Doctors</h3>
-          <p>{employees.filter(emp => emp.role === 'Doctor').length}</p>
+          <p>{employees.filter((emp) => emp.role === 'Doctor').length}</p>
         </div>
         <div className="stat-card">
           <h3>Today's Appointments</h3>
-          <p>{appointments.filter(apt => apt.date === new Date().toISOString().split('T')[0]).length}</p>
+          <p>
+            {
+              appointments.filter(
+                (apt) => apt.date === new Date().toISOString().split('T')[0]
+              ).length
+            }
+          </p>
         </div>
       </div>
 
       <div className="section" style={{ marginTop: '30px' }}>
         <h3>System Management</h3>
-        <p>Welcome to the Admin Dashboard. Manage employees, view schedules, and monitor system activity.</p>
+        <p>
+          Welcome to the Admin Dashboard. Manage employees, view schedules, and
+          monitor system activity.
+        </p>
         <div className="card-actions">
-          <button onClick={() => setView('employees')} className="btn-primary">👥 Manage Employees</button>
-          <button onClick={() => setView('doctor-schedules')} className="btn-secondary">📅 View Doctor Schedules</button>
-          <button onClick={() => setView('all-appointments')} className="btn-secondary">🏥 View All Appointments</button>
+          <button
+            onClick={() => setView('employees')}
+            className="btn-primary"
+          >
+            👥 Manage Employees
+          </button>
+          <button
+            onClick={() => setView('doctor-schedules')}
+            className="btn-secondary"
+          >
+            📅 View Doctor Schedules
+          </button>
+          <button
+            onClick={() => setView('all-appointments')}
+            className="btn-secondary"
+          >
+            🏥 View All Appointments
+          </button>
         </div>
       </div>
     </div>
   );
 
-  // ✅ Employees view
-  const EmployeesView = () => (
-    <div className="section">
-      <h2>👥 Employee Management</h2>
-
-      {showEmployeeForm && (
-        <div className="form-container">
-          <h3>Add New Employee</h3>
-          <form onSubmit={handleEmployeeSubmit}>
-            <div className="form-group">
-              <label>Name</label>
-              <input type="text" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required disabled={loading} />
-            </div>
-
-            <div className="form-group">
-              <label>Email</label>
-              <input type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} required disabled={loading} />
-            </div>
-
-            <div className="form-group">
-              <label>Password</label>
-              <input type="password" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} required disabled={loading} />
-            </div>
-
-            <div className="form-group">
-              <label>Role</label>
-              <select
-                value={formData.role}
-                onChange={(e) => {
-                  const newRole = e.target.value;
-                  setFormData({
-                    ...formData,
-                    role: newRole,
-                    specialization: newRole === 'Doctor' ? (specializations[0] || '') : ''
-                  });
-                }}
-                disabled={loading}
-              >
-                <option value="Doctor">Doctor</option>
-                <option value="Receptionist">Receptionist</option>
-                <option value="Lab Technician">Lab Technician</option>
-              </select>
-            </div>
-
-            {formData.role === 'Doctor' && (
-              <div className="form-group">
-                <label>Specialization</label>
-                <select
-                  value={formData.specialization}
-                  onChange={(e) => setFormData({ ...formData, specialization: e.target.value })}
-                  required
-                  disabled={loading}
-                >
-                  <option value="">Select Specialization</option>
-                  {specializations.map((spec, index) => (
-                    <option key={index} value={spec}>{spec}</option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            <div className="form-actions">
-              <button type="submit" className="btn-primary" disabled={loading}>{loading ? 'Adding...' : 'Add Employee'}</button>
-              <button type="button" onClick={() => setShowEmployeeForm(false)} className="btn-secondary" disabled={loading}>Cancel</button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      <div className="card-grid">
-        {employees.map(emp => (
-          <div key={emp.id} className="card">
-            <h3>{emp.name}</h3>
-            <p><strong>Email:</strong> {emp.email}</p>
-            <p><strong>Role:</strong> {emp.role}</p>
-            {emp.role === 'Doctor' && emp.specialization && (
-              <p><strong>Specialization:</strong> {emp.specialization}</p>
-            )}
-          </div>
-        ))}
-        {employees.length === 0 && !loading && <p>No employees found</p>}
-        {loading && <p>Loading employees...</p>}
-      </div>
-
-      <button onClick={() => setShowEmployeeForm(true)} className="btn-primary" disabled={loading}>➕ Add New Employee</button>
-    </div>
-  );
-
-  // ✅ Doctor Schedules view
   const DoctorSchedulesView = () => (
     <div className="section">
       <h2>📅 Doctor Schedules</h2>
@@ -251,13 +350,15 @@ export const AdminDashboard = () => {
         <p>Loading schedules...</p>
       ) : (
         <div className="card-grid">
-          {schedules.map(schedule => (
+          {schedules.map((schedule) => (
             <div key={schedule.doctor.id} className="card">
               <h3>{schedule.doctor.name}</h3>
               <div className="schedule-list">
-                {schedule.schedules.map(sched => (
+                {schedule.schedules.map((sched) => (
                   <div key={sched.id} className="schedule-item">
-                    <p><strong>{sched.day}:</strong> {sched.slots.join(', ')}</p>
+                    <p>
+                      <strong>{sched.day}:</strong> {sched.slots.join(', ')}
+                    </p>
                   </div>
                 ))}
               </div>
@@ -266,11 +367,16 @@ export const AdminDashboard = () => {
           {schedules.length === 0 && <p>No schedules found</p>}
         </div>
       )}
-      <button onClick={() => setView('dashboard')} className="btn-secondary" style={{ marginTop: '20px' }}>Back to Dashboard</button>
+      <button
+        onClick={() => setView('dashboard')}
+        className="btn-secondary"
+        style={{ marginTop: '20px' }}
+      >
+        Back to Dashboard
+      </button>
     </div>
   );
 
-  // ✅ All Appointments view
   const AllAppointmentsView = () => (
     <div className="section">
       <h2>🏥 All Appointments</h2>
@@ -278,26 +384,52 @@ export const AdminDashboard = () => {
         <p>Loading appointments...</p>
       ) : (
         <div className="card-grid">
-          {appointments.map(apt => (
+          {appointments.map((apt) => (
             <div key={apt.id} className="card">
               <h3>{apt.patient_name}</h3>
-              <p><strong>Doctor:</strong> Dr. {apt.doctor_name}</p>
-              <p><strong>Date:</strong> {apt.date}</p>
-              <p><strong>Time:</strong> {apt.time}</p>
-              <p><strong>Status:</strong> <span className={`status ${apt.status}`}>{apt.status}</span></p>
+              <p>
+                <strong>Doctor:</strong> Dr. {apt.doctor_name}
+              </p>
+              <p>
+                <strong>Date:</strong> {apt.date}
+              </p>
+              <p>
+                <strong>Time:</strong> {apt.time}
+              </p>
+              <p>
+                <strong>Status:</strong>{' '}
+                <span className={`status ${apt.status}`}>{apt.status}</span>
+              </p>
             </div>
           ))}
           {appointments.length === 0 && <p>No appointments found</p>}
         </div>
       )}
-      <button onClick={() => setView('dashboard')} className="btn-secondary" style={{ marginTop: '20px' }}>Back to Dashboard</button>
+      <button
+        onClick={() => setView('dashboard')}
+        className="btn-secondary"
+        style={{ marginTop: '20px' }}
+      >
+        Back to Dashboard
+      </button>
     </div>
   );
 
-  // ✅ Render view
   switch (view) {
     case 'employees':
-      return <EmployeesView />;
+      return (
+        <EmployeesView
+          employees={employees}
+          loading={loading}
+          showEmployeeForm={showEmployeeForm}
+          setShowEmployeeForm={setShowEmployeeForm}
+          formData={formData}
+          setFormData={setFormData}
+          handleEmployeeSubmit={handleEmployeeSubmit}
+          specializations={specializations}
+          nameInputRef={nameInputRef}
+        />
+      );
     case 'doctor-schedules':
       return <DoctorSchedulesView />;
     case 'all-appointments':

@@ -182,6 +182,22 @@ async getDoctors() {
   return await this.request('/doctors');
 }
 
+// Add this method if it doesn't exist
+async getAvailableDoctors() {
+  return await this.request('/appointments/available');
+}
+
+// Or update your existing getAppointments method to handle the available endpoint
+async getAppointments(filters = {}) {
+  if (filters.endpoint === '/appointments/available') {
+    return await this.request('/appointments/available');
+  }
+  
+  const params = new URLSearchParams(filters).toString();
+  return await this.request(`/appointments${params ? '?' + params : ''}`);
+}
+
+
   async getPatients() {
     return await this.request('/users?role=Patient');
   }

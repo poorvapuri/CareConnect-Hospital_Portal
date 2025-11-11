@@ -95,6 +95,7 @@ router.post('/register/patient', async (req, res) => {
 });
 
 // Employee Registration Endpoint (for Admin)
+// Employee Registration Endpoint (update this section)
 router.post('/register/employee', async (req, res) => {
   try {
     const { name, email, password, role, specialization = null } = req.body;
@@ -116,20 +117,22 @@ router.post('/register/employee', async (req, res) => {
       return res.status(400).json({ error: 'Employee with this email already exists' });
     }
     
-    // Create employee user
+    // Create employee user - INCLUDE SPECIALIZATION IF DOCTOR
     const user = await User.create({
       name,
       email,
       password,
-      role
+      role,
+      ...(role === 'Doctor' && { specialization }) // Add specialization to user record
     });
     
-    // If doctor, create doctor record with specialization
+    // If doctor, also create doctor record with specialization
     if (role === 'Doctor') {
       if (!specialization) {
         return res.status(400).json({ error: 'Specialization is required for doctors' });
       }
       
+      // Create doctor record
       await Doctor.create({
         userId: user.id,
         specialization
@@ -147,6 +150,7 @@ router.post('/register/employee', async (req, res) => {
       }
     });
   } catch (error) {
+    console.error('Error registering employee:', error);
     res.status(500).json({ error: error.message });
   }
 });

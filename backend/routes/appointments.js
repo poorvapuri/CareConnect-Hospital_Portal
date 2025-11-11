@@ -56,11 +56,24 @@ router.patch('/:id/status', authenticateToken, async (req, res) => {
 // Add these new endpoints
 
 // Get available doctors
+// Add or update the available doctors endpoint
 router.get('/available', authenticateToken, async (req, res) => {
   try {
+    // Get all doctors
     const doctors = await User.findAll('Doctor');
-    res.json(doctors);
+    
+    // Format response to include specialization
+    const availableDoctors = doctors.map(doctor => ({
+      id: doctor.id,
+      name: doctor.name,
+      email: doctor.email,
+      specialization: doctor.specialization || 'General Medicine', // Default if null
+      role: doctor.role
+    }));
+    
+    res.json(availableDoctors);
   } catch (error) {
+    console.error('Error fetching available doctors:', error);
     res.status(500).json({ error: error.message });
   }
 });

@@ -3,16 +3,18 @@ import bcrypt from 'bcryptjs';
 
 export class User {
   static async create(userData) {
-    const { name, email, password, role = 'Patient' } = userData;
+    const { name, email, password, role = 'Patient', specialization = null } = userData;
     const hashedPassword = await bcrypt.hash(password, 10);
     
     const query = `
-      INSERT INTO users (name, email, password, role)
-      VALUES ($1, $2, $3, $4)
-      RETURNING id, name, email, role
+      INSERT INTO users (name, email, password, role, specialization)
+      VALUES ($1, $2, $3, $4, $5)
+      RETURNING id, name, email, role, specialization
     `;
     
-    const values = [name, email, hashedPassword, role];
+    // If not a doctor, set specialization to NULL
+    const specValue = role === 'Doctor' ? specialization : null;
+    const values = [name, email, hashedPassword, role, specValue];
     const result = await pool.query(query, values);
     return result.rows[0];
   }
@@ -24,13 +26,13 @@ export class User {
   }
 
   static async findById(id) {
-    const query = 'SELECT id, name, email, role FROM users WHERE id = $1';
+    const query = 'SELECT id, name, email, role, specialization FROM users WHERE id = $1';
     const result = await pool.query(query, [id]);
     return result.rows[0];
   }
 
   static async findAll(role = null) {
-    let query = 'SELECT id, name, email, role FROM users';
+    let query = 'SELECT id, name, email, role, specialization FROM users';
     let values = [];
     
     if (role) {
