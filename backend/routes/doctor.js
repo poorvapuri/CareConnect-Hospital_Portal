@@ -5,6 +5,24 @@ import { Appointment } from '../models/appointment.js';
 
 const router = express.Router();
 
+/* ✅ NEW ROUTE — Get all doctors (used in patient dashboard)
+   URL: GET /api/doctors
+   Description: Returns all users with role = "Doctor"
+*/
+router.get('/', authenticateToken, async (req, res) => {
+  try {
+    // If your User model uses Sequelize-like helpers:
+    const doctors = await User.findAll('Doctor');
+    // If you’re using Mongoose instead, replace the above with:
+    // const doctors = await User.find({ role: 'Doctor' });
+
+    res.status(200).json(doctors);
+  } catch (error) {
+    console.error('Error fetching doctors:', error);
+    res.status(500).json({ error: 'Failed to fetch doctors' });
+  }
+});
+
 // Get doctor's daily appointments
 router.get('/daily-appointments', authenticateToken, authorizeRoles('Doctor'), async (req, res) => {
   try {
@@ -30,7 +48,6 @@ router.get('/calendar', authenticateToken, authorizeRoles('Doctor'), async (req,
     if (startDate) filters.startDate = startDate;
     if (endDate) filters.endDate = endDate;
     
-    // You'll need to update your Appointment model to handle date ranges
     const appointments = await Appointment.findAll(filters);
     res.json(appointments);
   } catch (error) {
@@ -42,18 +59,18 @@ router.get('/calendar', authenticateToken, authorizeRoles('Doctor'), async (req,
 router.post('/lab-test-notes', authenticateToken, authorizeRoles('Doctor'), async (req, res) => {
   try {
     const { patientId, testName, notes, amount } = req.body;
-    
-    // Create lab test with doctor's notes
+
+    // If using a LabTest model, make sure it’s imported and has these fields
     const labTest = await LabTest.create({
       patientId,
       testName,
       date: new Date().toISOString().split('T')[0],
-      notes, // Add notes field to your LabTest model
-      suggestedAmount: amount, // Add suggestedAmount field
+      notes,
+      suggestedAmount: amount,
       paymentStatus: 'Pending',
       status: 'Pending'
     });
-    
+
     res.status(201).json(labTest);
   } catch (error) {
     res.status(500).json({ error: error.message });
