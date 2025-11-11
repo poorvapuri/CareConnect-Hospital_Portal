@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 
 class ApiService {
   constructor() {
@@ -176,9 +176,11 @@ class ApiService {
     return await this.request(`/users${params}`);
   }
 
-  async getDoctors() {
-    return await this.request('/users?role=Doctor');
-  }
+  // ✅ Doctor endpoints
+async getDoctors() {
+  // This now correctly calls your backend route `/api/doctors`
+  return await this.request('/doctors');
+}
 
   async getPatients() {
     return await this.request('/users?role=Patient');
