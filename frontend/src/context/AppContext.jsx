@@ -23,11 +23,18 @@ export const AppProvider = ({ children }) => {
     const token = localStorage.getItem('careconnect_token');
     const user = localStorage.getItem('careconnect_user');
     
-    if (token && user) {
-      apiService.setToken(token);
-      setCurrentUser(JSON.parse(user));
-      setView('dashboard');
-    }
+   if (token && user) {
+  apiService.setToken(token);
+  const parsedUser = JSON.parse(user);
+  setCurrentUser(parsedUser);
+
+  if (parsedUser.role === "Receptionist") {
+    setView("dashboard");
+  } else {
+    setView("dashboard"); // default for other roles
+  }
+}
+
   }, []);
 
   const showMessage = (type, text) => {

@@ -339,12 +339,13 @@ function App() {
             >
               Doctors List
             </button> */}
-            <button 
-              onClick={() => setView('appointments')} 
-              className={view === 'appointments' ? 'active' : ''}
-            >
-              Appointments
-            </button>
+           <button 
+  onClick={() => setView('appointments-today')} 
+  className={view === 'appointments-today' ? 'active' : ''}
+>
+  Appointments
+</button>
+
             
             {/* <button 
               onClick={() => setView('checkin')} 

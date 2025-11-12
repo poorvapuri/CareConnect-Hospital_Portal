@@ -232,29 +232,9 @@ async getAvailableDoctors() {
 }
 
 // Update your getAppointments method
-async getAppointments(filters = {}) {
-  // If endpoint is specified in filters, use it
-  if (filters.endpoint) {
-    const response = await fetch(`${API_BASE_URL}${filters.endpoint}`, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...(this.token && { Authorization: `Bearer ${this.token}` })
-      }
-    });
-    
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.error || 'Something went wrong');
-    }
-    
-    return data;
-  }
+
   
-  // Otherwise use the default appointments endpoint
-  const params = new URLSearchParams(filters).toString();
-  return await this.request(`/appointments${params ? '?' + params : ''}`);
-}
+  
 
   async getPatients() {
     return await this.request('/users?role=Patient');

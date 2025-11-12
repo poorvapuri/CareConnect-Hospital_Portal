@@ -25,23 +25,34 @@ router.post('/', authenticateToken, async (req, res) => {
 router.get('/', authenticateToken, async (req, res) => {
   try {
     const filters = {};
-    
+
+    console.log("📌 GET /appointments called");
+    console.log("Query:", req.query);
+    console.log("User FROM TOKEN:", req.user);
+
     if (req.user.role === 'Doctor') {
       filters.doctorId = req.user.id;
     } else if (req.user.role === 'Patient') {
       filters.patientId = req.user.id;
     }
-    
+
     if (req.query.date) {
       filters.date = req.query.date;
     }
-    
+
+    console.log("Filters AFTER applying date:", filters);
+
     const appointments = await Appointment.findAll(filters);
+
+    console.log("DB returned:", appointments.length, "appointments");
+
     res.json(appointments);
   } catch (error) {
+    console.error("❌ ERROR:", error);
     res.status(500).json({ error: error.message });
   }
 });
+
 
 router.patch('/:id/status', authenticateToken, async (req, res) => {
   try {
