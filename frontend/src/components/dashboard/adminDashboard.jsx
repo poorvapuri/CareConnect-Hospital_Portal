@@ -3,7 +3,7 @@ import { useApp } from '../../context/AppContext';
 import { apiService } from '../../services/api';
 
 // ===============================
-// ✅ Separate EmployeesView Component
+// EmployeesView (button moved to top and styled)
 // ===============================
 const EmployeesView = ({
   employees,
@@ -16,12 +16,38 @@ const EmployeesView = ({
   specializations,
   nameInputRef
 }) => (
-  <div className="section">
-    <h2>👥 Employee Management</h2>
+  <div className="section" style={{ maxWidth: 1100, margin: '0 auto' }}>
+    <div
+      style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 24,
+        flexWrap: 'wrap',
+        gap: 12
+      }}
+    >
+      <h2 style={{ margin: 0, fontWeight: 700 }}>Employee Management</h2>
+
+      <button
+        onClick={() => setShowEmployeeForm(true)}
+        className="btn-primary"
+        style={{
+          padding: '10px 18px',
+          borderRadius: 8,
+          fontWeight: 500,
+          boxShadow: '0 4px 10px rgba(0,0,0,0.08)',
+          flexShrink: 0
+        }}
+        disabled={loading}
+      >
+        Add New Employee
+      </button>
+    </div>
 
     {showEmployeeForm && (
-      <div className="form-container">
-        <h3>Add New Employee</h3>
+      <div className="form-container" style={{ marginBottom: 28 }}>
+        <h3 style={{ marginTop: 0 }}>Add New Employee</h3>
         <form onSubmit={handleEmployeeSubmit}>
           <div className="form-group">
             <label>Name</label>
@@ -108,7 +134,7 @@ const EmployeesView = ({
             </div>
           )}
 
-          <div className="form-actions">
+          <div className="form-actions" style={{ marginTop: 12 }}>
             <button type="submit" className="btn-primary" disabled={loading}>
               {loading ? 'Adding...' : 'Add Employee'}
             </button>
@@ -117,6 +143,7 @@ const EmployeesView = ({
               onClick={() => setShowEmployeeForm(false)}
               className="btn-secondary"
               disabled={loading}
+              style={{ marginLeft: 8 }}
             >
               Cancel
             </button>
@@ -125,19 +152,35 @@ const EmployeesView = ({
       </div>
     )}
 
-    <div className="card-grid">
+    <div
+      className="card-grid"
+      style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+        gap: 16
+      }}
+    >
       {employees.map((emp) => (
-        <div key={emp.id} className="card">
-          <h3>{emp.name}</h3>
-          <p>
+        <div
+          key={emp.id || emp._id || emp.email}
+          className="card"
+          style={{
+            background: '#fff',
+            borderRadius: 10,
+            padding: '16px 14px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.06)'
+          }}
+        >
+          <h3 style={{ marginBottom: 8 }}>{emp.name}</h3>
+          <p style={{ margin: '6px 0' }}>
             <strong>Email:</strong> {emp.email}
           </p>
-          <p>
+          <p style={{ margin: '6px 0' }}>
             <strong>Role:</strong> {emp.role}
           </p>
-          {emp.role === 'Doctor' && emp.specialization && (
-            <p>
-              <strong>Specialization:</strong> {emp.specialization}
+          {emp.role === 'Doctor' && (emp.specialization || emp.speciality || emp.specialty) && (
+            <p style={{ margin: '6px 0' }}>
+              <strong>Specialization:</strong> {emp.specialization || emp.speciality || emp.specialty}
             </p>
           )}
         </div>
@@ -145,24 +188,15 @@ const EmployeesView = ({
       {employees.length === 0 && !loading && <p>No employees found</p>}
       {loading && <p>Loading employees...</p>}
     </div>
-
-    <button
-      onClick={() => setShowEmployeeForm(true)}
-      className="btn-primary"
-      disabled={loading}
-    >
-      ➕ Add New Employee
-    </button>
   </div>
 );
 
 // ===============================
-// ✅ Main AdminDashboard Component
+// AdminDashboard (improved, centered, AllAppointmentsView restored)
 // ===============================
 export const AdminDashboard = () => {
   const { view, setView, showMessage } = useApp();
   const [employees, setEmployees] = useState([]);
-  const [schedules, setSchedules] = useState([]);
   const [appointments, setAppointments] = useState([]);
   const [showEmployeeForm, setShowEmployeeForm] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -177,14 +211,14 @@ export const AdminDashboard = () => {
 
   const nameInputRef = useRef(null);
 
-  // ✅ Auto focus when form opens
+  // Auto focus when form opens
   useEffect(() => {
     if (showEmployeeForm) {
       nameInputRef.current?.focus();
     }
   }, [showEmployeeForm]);
 
-  // ✅ Fetch doctor specializations when role changes
+  // Fetch specializations when role is Doctor
   useEffect(() => {
     if (formData.role === 'Doctor') {
       fetchSpecializations();
@@ -192,31 +226,65 @@ export const AdminDashboard = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.role]);
 
-  // ✅ Fetch main data when view changes
+  // Fetch data whenever view changes (and on mount)
   useEffect(() => {
     fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view]);
 
-const fetchSpecializations = async () => {
-  try {
-    const defaultSpecializations = [
-      'General Medicine', 'Cardiology', 'Neurology', 'Orthopedics', 'Pediatrics',
-      'Dermatology', 'Gynecology', 'Ophthalmology', 'ENT', 'Psychiatry',
-      'Dentistry', 'Radiology', 'Anesthesiology', 'Emergency Medicine'
-    ];
+  // Initial fetch on mount as well
+  useEffect(() => {
+    fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-    // Try fetching available doctors
-    const availableDoctors = await apiService.getAppointments({ endpoint: '/appointments/available' });
+  const fetchSpecializations = async () => {
+    try {
+      let availableDoctors = [];
+      try {
+        const res = await apiService.getDoctors();
+        if (Array.isArray(res)) availableDoctors = res;
+        else if (res && Array.isArray(res.doctors)) availableDoctors = res.doctors;
+        else if (res && Array.isArray(res.data)) availableDoctors = res.data;
+      } catch (err) {
+        console.warn('fetchSpecializations: getDoctors failed', err);
+      }
 
-    let uniqueSpecializations = [];
+      let uniqueSpecializations = [];
+      if (Array.isArray(availableDoctors)) {
+        uniqueSpecializations = [...new Set(
+          availableDoctors
+            .map(doc => (doc.specialization || doc.speciality || doc.specialty || '').trim())
+            .filter(Boolean)
+        )];
+      }
 
-    if (Array.isArray(availableDoctors)) {
-      uniqueSpecializations = [...new Set(
-        availableDoctors
-          .filter(doc => doc && doc.specialization)
-          .map(doc => doc.specialization.trim())
-      )];
+      if (uniqueSpecializations.length === 0) {
+        uniqueSpecializations = [
+          'General Medicine',
+          'Cardiology',
+          'Neurology',
+          'Orthopedics',
+          'Pediatrics',
+          'Dermatology',
+          'Gynecology',
+          'Ophthalmology',
+          'ENT',
+          'Psychiatry',
+          'Dentistry',
+          'Radiology',
+          'Anesthesiology',
+          'Emergency Medicine'
+        ];
+      }
+
+      setSpecializations(uniqueSpecializations);
+      if (!formData.specialization && uniqueSpecializations.length > 0) {
+        setFormData(prev => ({ ...prev, specialization: uniqueSpecializations[0] }));
+      }
+    } catch (error) {
+      console.error('Error fetching specializations:', error);
+      showMessage && showMessage('error', 'Failed to load doctor specializations');
     }
 
     // ✅ Merge with defaults to show all unique options
@@ -245,11 +313,10 @@ const fetchSpecializations = async () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      if (view === 'employees') await fetchEmployees();
-      if (view === 'doctor-schedules') await fetchSchedules();
-      if (view === 'all-appointments') await fetchAppointments();
-    } catch (error) {
-      showMessage('error', error.message);
+      // fetch employees and appointments in parallel
+      await Promise.allSettled([fetchEmployees(), fetchAppointments()]);
+    } catch (err) {
+      console.error('fetchData error', err);
     } finally {
       setLoading(false);
     }
@@ -258,39 +325,25 @@ const fetchSpecializations = async () => {
   const fetchEmployees = async () => {
     try {
       const empList = await apiService.getEmployees();
-      setEmployees(empList);
+      // some endpoints return { data: [] } etc.
+      const list = Array.isArray(empList) ? empList : (empList?.data || empList?.employees || []);
+      setEmployees(list);
+      return list;
     } catch (error) {
       console.error('Error fetching employees:', error);
-    }
-  };
-
-  const fetchSchedules = async () => {
-    try {
-      const response = await fetch('/api/schedules', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('careconnect_token')}`
-        }
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Failed to fetch schedules');
-      setSchedules(data);
-    } catch (error) {
-      console.error('Error fetching schedules:', error);
+      return [];
     }
   };
 
   const fetchAppointments = async () => {
     try {
-      const response = await fetch('/api/appointments', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('careconnect_token')}`
-        }
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Failed to fetch appointments');
-      setAppointments(data);
+      const apts = await apiService.getAppointments();
+      const list = Array.isArray(apts) ? apts : (apts?.data || apts?.appointments || []);
+      setAppointments(list);
+      return list;
     } catch (error) {
       console.error('Error fetching appointments:', error);
+      return [];
     }
   };
 
@@ -307,156 +360,245 @@ const fetchSpecializations = async () => {
         email: formData.email,
         password: formData.password,
         role: formData.role,
-        ...(formData.role === 'Doctor' && {
-          specialization: formData.specialization
-        })
+        ...(formData.role === 'Doctor' && { specialization: formData.specialization })
       };
 
-      const user = await apiService.registerEmployee(employeeData);
-      showMessage('success', 'Employee added successfully');
+      await apiService.registerEmployee(employeeData);
+      showMessage && showMessage('success', 'Employee added successfully');
       setShowEmployeeForm(false);
-      setFormData({
-        name: '',
-        email: '',
-        password: '',
-        role: 'Doctor',
-        specialization: specializations.length > 0 ? specializations[0] : ''
-      });
-      fetchEmployees();
+      setFormData({ name: '', email: '', password: '', role: 'Doctor', specialization: specializations[0] || '' });
+      await fetchEmployees();
     } catch (error) {
-      showMessage('error', error.message);
+      console.error('handleEmployeeSubmit error', error);
+      showMessage && showMessage('error', error.message || 'Failed to add employee');
     } finally {
       setLoading(false);
     }
   };
 
-  // ✅ Dashboard main section
-  const MainDashboard = () => (
-    <div className="section">
-      <h2>Admin Dashboard</h2>
-      <div className="stats-grid">
-        <div className="stat-card">
-          <h3>Total Employees</h3>
-          <p>{employees.length}</p>
-        </div>
-        <div className="stat-card">
-          <h3>Active Doctors</h3>
-          <p>{employees.filter((emp) => emp.role === 'Doctor').length}</p>
-        </div>
-        <div className="stat-card">
-          <h3>Today's Appointments</h3>
-          <p>
-            {
-              appointments.filter(
-                (apt) => apt.date === new Date().toISOString().split('T')[0]
-              ).length
-            }
-          </p>
-        </div>
-      </div>
-
-      <div className="section" style={{ marginTop: '30px' }}>
-        <h3>System Management</h3>
-        <p>
-          Welcome to the Admin Dashboard. Manage employees, view schedules, and
-          monitor system activity.
-        </p>
-        <div className="card-actions">
-          <button
-            onClick={() => setView('employees')}
-            className="btn-primary"
-          >
-            👥 Manage Employees
-          </button>
-          <button
-            onClick={() => setView('doctor-schedules')}
-            className="btn-secondary"
-          >
-            📅 View Doctor Schedules
-          </button>
-          <button
-            onClick={() => setView('all-appointments')}
-            className="btn-secondary"
-          >
-            🏥 View All Appointments
-          </button>
-        </div>
-      </div>
+  // Dashboard stat card small component
+  const StatCard = ({ title, value }) => (
+    <div style={{
+      minWidth: 220,
+      maxWidth: 320,
+      flex: '1 1 260px',
+      borderRadius: 12,
+      padding: '26px 20px',
+      background: 'linear-gradient(135deg,#6d6af0,#8b50c9)',
+      color: '#fff',
+      boxShadow: '0 8px 28px rgba(70,50,120,0.08)',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      margin: 12
+    }}>
+      <div style={{ fontSize: 13, letterSpacing: 1.1, opacity: 0.95 }}>{title.toUpperCase()}</div>
+      <div style={{ fontSize: 36, fontWeight: 700, marginTop: 8 }}>{value}</div>
     </div>
   );
 
-  const DoctorSchedulesView = () => (
-    <div className="section">
-      <h2>📅 Doctor Schedules</h2>
-      {loading ? (
-        <p>Loading schedules...</p>
-      ) : (
-        <div className="card-grid">
-          {schedules.map((schedule) => (
-            <div key={schedule.doctor.id} className="card">
-              <h3>{schedule.doctor.name}</h3>
-              <div className="schedule-list">
-                {schedule.schedules.map((sched) => (
-                  <div key={sched.id} className="schedule-item">
-                    <p>
-                      <strong>{sched.day}:</strong> {sched.slots.join(', ')}
-                    </p>
-                  </div>
-                ))}
-              </div>
+  // Main Dashboard (centered)
+  const MainDashboard = () => {
+    const todayStr = new Date().toISOString().split('T')[0];
+    const todaysAppointmentsCount = appointments.filter(a => (a.date === todayStr) || (a.appointmentDate === todayStr)).length;
+
+    return (
+      <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+        <div style={{
+          background: '#fff',
+          borderRadius: 14,
+          padding: 28,
+          boxShadow: '0 10px 28px rgba(20,20,40,0.06)'
+        }}>
+          <h2 style={{ marginTop: 0 }}>Admin Dashboard</h2>
+          <div style={{ color: '#666', marginBottom: 18 }}>Manage employees, view appointments and monitor system activity.</div>
+
+          <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <StatCard title="Total Employees" value={employees.length || 0} />
+            <StatCard title="Active Doctors" value={(employees.filter(e => e.role === 'Doctor').length) || 0} />
+            <StatCard title="Today's Appointments" value={todaysAppointmentsCount || 0} />
+          </div>
+
+          <div style={{
+            marginTop: 22,
+            background: '#fbfbfe',
+            borderRadius: 10,
+            padding: 16,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 12,
+            flexWrap: 'wrap'
+          }}>
+            <div>
+              <h3 style={{ margin: '0 0 6px 0' }}>System Management</h3>
+              <div style={{ color: '#666' }}>Quick actions to manage employees and appointments.</div>
             </div>
-          ))}
-          {schedules.length === 0 && <p>No schedules found</p>}
-        </div>
-      )}
-      <button
-        onClick={() => setView('dashboard')}
-        className="btn-secondary"
-        style={{ marginTop: '20px' }}
-      >
-        Back to Dashboard
-      </button>
-    </div>
-  );
 
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button onClick={() => setView && setView('employees')} className="btn-primary" style={{ padding: '10px 16px', borderRadius: 8 }}>Manage Employees</button>
+              <button onClick={() => setView && setView('all-appointments')} className="btn-secondary" style={{ padding: '10px 16px', borderRadius: 8 }}>View All Appointments</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Helper: format only date in IST (DD/MM/YYYY)
+  const formatDateOnlyIST = (dateString) => {
+    if (!dateString) return '';
+    try {
+      const d = new Date(dateString);
+      // en-GB gives dd/mm/yyyy formatting
+      return d.toLocaleDateString('en-GB', { timeZone: 'Asia/Kolkata' });
+    } catch (err) {
+      return dateString;
+    }
+  };
+
+  // Helper: convert ISO time portion to hh:mm AM/PM in IST (used only if no explicit time field)
+  const extractAndFormatTimeFromISO = (isoString) => {
+    try {
+      const d = new Date(isoString);
+      return d.toLocaleTimeString('en-IN', {
+        timeZone: 'Asia/Kolkata',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      });
+    } catch {
+      return '';
+    }
+  };
+
+  // Helper: ensure doctor name not duplicated with Dr. prefix
+  const cleanDoctorName = (raw) => {
+    if (!raw) return '';
+    // Remove common doctor prefixes (case-insensitive)
+    const noPrefix = raw.replace(/^\s*(Dr\.?|dr\.?|DR\.?)\s*/i, '');
+    // Normalize whitespace
+    const trimmed = noPrefix.trim();
+    return trimmed ? `Dr. ${trimmed}` : '';
+  };
+
+  // ===============================
+  // AllAppointmentsView (enhanced visual box + centered header)
+  // ===============================
   const AllAppointmentsView = () => (
-    <div className="section">
-      <h2>🏥 All Appointments</h2>
-      {loading ? (
-        <p>Loading appointments...</p>
-      ) : (
-        <div className="card-grid">
-          {appointments.map((apt) => (
-            <div key={apt.id} className="card">
-              <h3>{apt.patient_name}</h3>
-              <p>
-                <strong>Doctor:</strong> Dr. {apt.doctor_name}
-              </p>
-              <p>
-                <strong>Date:</strong> {apt.date}
-              </p>
-              <p>
-                <strong>Time:</strong> {apt.time}
-              </p>
-              <p>
-                <strong>Status:</strong>{' '}
-                <span className={`status ${apt.status}`}>{apt.status}</span>
-              </p>
-            </div>
-          ))}
-          {appointments.length === 0 && <p>No appointments found</p>}
+    <div style={{ maxWidth: 980, margin: '20px auto' }}>
+      <div style={{
+        background: '#fff',
+        borderRadius: 14,
+        padding: 22,
+        boxShadow: '0 12px 30px rgba(20,20,40,0.06)'
+      }}>
+        {/* Centered, prominent heading in a small top box */}
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
+          <div style={{
+            padding: '8px 18px',
+            borderRadius: 10,
+            background: '#fafaff',
+            boxShadow: 'inset 0 -1px 0 rgba(0,0,0,0.02)'
+          }}>
+            <h2 style={{ margin: 0, fontWeight: 700, fontSize: 20, textAlign: 'center' }}>
+              All Appointments
+            </h2>
+          </div>
         </div>
-      )}
-      <button
-        onClick={() => setView('dashboard')}
-        className="btn-secondary"
-        style={{ marginTop: '20px' }}
-      >
-        Back to Dashboard
-      </button>
+
+        {/* single line break / spacer after heading */}
+        <div style={{ height: 12 }} />
+
+        {loading ? <p>Loading appointments...</p> : (
+          <div style={{ display: 'grid', gap: 12 }}>
+            {appointments.length === 0 && <p>No appointments found.</p>}
+            {appointments.map((apt) => {
+              const id = apt.id || apt._id || `${apt.patientId || apt.patient_name}-${apt.date || apt.appointmentDate}-${apt.time || apt.appointmentTime}`;
+
+              // Prefer date fields, fall back to appointmentDate
+              const rawDate = apt.date || apt.appointmentDate || null;
+              const dateDisplay = rawDate ? formatDateOnlyIST(rawDate) : '';
+
+              // Use explicit time field if provided (preserve previous look)
+              const explicitTime = apt.time || apt.appointmentTime || '';
+              // If explicitTime not present but date contains ISO time, extract & format it
+              let timeDisplay = explicitTime;
+              if (!timeDisplay && rawDate && /\dT\d/.test(rawDate)) {
+                timeDisplay = extractAndFormatTimeFromISO(rawDate); // e.g. "09:00 AM"
+              }
+
+              // doctor name cleanup
+              const doctorRaw = apt.doctor_name || (apt.doctor && (apt.doctor.name || apt.doctor.fullName)) || '';
+              const doctorDisplay = cleanDoctorName(doctorRaw);
+
+              return (
+                <div key={id} style={{
+                  borderRadius: 10,
+                  padding: 14,
+                  background: '#fbfbfb',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  boxShadow: '0 3px 8px rgba(0,0,0,0.02)'
+                }}>
+                  <div style={{ maxWidth: '78%' }}>
+                    <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 6 }}>
+                      {apt.patient_name || (apt.patient && (apt.patient.name || `${apt.patient.firstName || ''} ${apt.patient.lastName || ''}`)) || 'Unknown Patient'}
+                    </div>
+                    <div style={{ color: '#555', marginBottom: 6 }}>
+                      {doctorDisplay || 'Doctor'}
+                    </div>
+                    <div style={{ color: '#777', fontSize: 13 }}>
+                      {dateDisplay}{timeDisplay ? ` • ${timeDisplay}` : ''}
+                    </div>
+                  </div>
+
+                  <div style={{ textAlign: 'right', minWidth: 120 }}>
+                    <div style={{
+                      display: 'inline-block',
+                      padding: '8px 12px',
+                      borderRadius: 8,
+                      background: '#fff',
+                      boxShadow: '0 4px 10px rgba(0,0,0,0.04)',
+                      fontSize: 13,
+                      color: '#333'
+                    }}>
+                      {apt.status || apt.paymentStatus || 'N/A'}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Centered Back Button with CareConnect theme color */}
+        <div style={{ marginTop: 22, display: 'flex', justifyContent: 'center' }}>
+          <button
+            onClick={() => setView && setView('dashboard')}
+            className="btn-primary"
+            style={{
+              background: 'linear-gradient(135deg,#6d6af0,#8b50c9)',
+              color: '#fff',
+              border: 'none',
+              padding: '12px 26px',
+              borderRadius: 12,
+              fontWeight: 600,
+              fontSize: 16,
+              boxShadow: '0 8px 24px rgba(105,70,200,0.12)',
+              cursor: 'pointer',
+            }}
+          >
+            Back to Dashboard
+          </button>
+        </div>
+      </div>
     </div>
   );
 
+  // View switch
   switch (view) {
     case 'employees':
       return (
@@ -472,8 +614,6 @@ const fetchSpecializations = async () => {
           nameInputRef={nameInputRef}
         />
       );
-    case 'doctor-schedules':
-      return <DoctorSchedulesView />;
     case 'all-appointments':
       return <AllAppointmentsView />;
     default:

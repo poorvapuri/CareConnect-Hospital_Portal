@@ -296,12 +296,12 @@ function App() {
             >
               All Appointments
             </button>
-            <button 
+            {/* <button 
               onClick={() => setView('doctor-schedules')} 
               className={view === 'doctor-schedules' ? 'active' : ''}
             >
               Doctor Schedules
-            </button>
+            </button> */}
           </>
         )}
         
