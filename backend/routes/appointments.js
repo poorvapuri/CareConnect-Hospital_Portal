@@ -92,6 +92,34 @@ router.get('/doctor/:doctorId/date/:date', authenticateToken, async (req, res) =
   }
 });
 
+// Add or update the available doctors endpoint
+router.get('/available', authenticateToken, async (req, res) => {
+  try {
+    // Get all doctors with their specializations
+    const query = `
+      SELECT 
+        id,
+        name,
+        email,
+        role,
+        specialization
+      FROM users 
+      WHERE role = 'Doctor'
+      ORDER BY name
+    `;
+    
+    const result = await pool.query(query);
+    const doctors = result.rows;
+    
+    console.log('🏥 Available Doctors:', doctors);
+    
+    res.json(doctors);
+  } catch (error) {
+    console.error('❌ Error fetching available doctors:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Walk-in appointment creation
 router.post('/walk-in', authenticateToken, authorizeRoles('Receptionist'), async (req, res) => {
   try {

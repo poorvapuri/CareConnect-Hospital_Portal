@@ -95,7 +95,16 @@ export const PatientDashboard = () => {
               <option value="">Choose a doctor</option>
               {doctors.map(doc => (
                 <option key={doc.id} value={doc.id}>
-                  {doc.name} - {doc.specialty || 'General Medicine'}
+                  {doc.name} - {<html lang="en" className="specialization">
+                  <head>
+                    <meta charset="UTF-8" />
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+                    <title>Document</title>
+                  </head>
+                  <body>
+                    
+                  </body>
+                  </html> || 'General Medicine'}
                 </option>
               ))}
             </select>
@@ -250,8 +259,8 @@ export const PatientDashboard = () => {
                 {doctor.name.split(' ').map(n => n[0]).join('')}
               </div>
               <h3>{doctor.name}</h3>
-              <p className="specialty">{doctor.specialty || 'General Medicine'}</p>
-              <p className="qualification">{doctor.qualification || 'MBBS'}</p>
+              <p className="specialization">{doctors.specialization || 'General Medicine'}</p>
+              <p className="qualification">{doctors.qualification || 'MBBS'}</p>
               <div className="availability-status">
                 {doctor.available ? '🟢 Available Today' : '🔴 Not Available'}
               </div>

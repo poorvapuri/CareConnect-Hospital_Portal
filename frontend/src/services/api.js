@@ -183,20 +183,53 @@ async getDoctors() {
 }
 
 // Add this method if it doesn't exist
+// Add this method to your ApiService class in api.js
 async getAvailableDoctors() {
-  return await this.request('/appointments/available');
+  try {
+    const response = await fetch(`${API_BASE_URL}/appointments/available`, {
+      headers: {
+        'Content-Type': 'application/json',
+        ...(this.token && { Authorization: `Bearer ${this.token}` })
+      }
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to fetch available doctors');
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('Error fetching available doctors:', error);
+    throw error;
+  }
 }
 
-// Or update your existing getAppointments method to handle the available endpoint
+// Update your getAppointments method
 async getAppointments(filters = {}) {
-  if (filters.endpoint === '/appointments/available') {
-    return await this.request('/appointments/available');
+  // If endpoint is specified in filters, use it
+  if (filters.endpoint) {
+    const response = await fetch(`${API_BASE_URL}${filters.endpoint}`, {
+      headers: {
+        'Content-Type': 'application/json',
+        ...(this.token && { Authorization: `Bearer ${this.token}` })
+      }
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.error || 'Something went wrong');
+    }
+    
+    return data;
   }
   
+  // Otherwise use the default appointments endpoint
   const params = new URLSearchParams(filters).toString();
   return await this.request(`/appointments${params ? '?' + params : ''}`);
 }
-
 
   async getPatients() {
     return await this.request('/users?role=Patient');

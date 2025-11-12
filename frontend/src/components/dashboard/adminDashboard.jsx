@@ -198,31 +198,87 @@ export const AdminDashboard = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view]);
 
- // ✅ Mocked specialization list (no API call)
-const fetchSpecializations = async () => {
-  const mockSpecializations = [
-    'General Medicine',
-    'Cardiology',
-    'Neurology',
-    'Orthopedics',
-    'Pediatrics',
-    'Dermatology',
-    'Gynecology',
-    'Ophthalmology',
-    'ENT',
-    'Psychiatry',
-    'Radiology',
-    'Urology',
-    'Oncology',
-    'Nephrology',
-    'Anesthesiology',
-    'Gastroenterology',
-    'Endocrinology'
-  ];
-
-  setSpecializations(mockSpecializations);
-};
-
+  const fetchSpecializations = async () => {
+    try {
+      // Use available doctors endpoint
+      const availableDoctors = await apiService.getAppointments({ endpoint: '/appointments/available' });
+      
+      console.log('🔍 Available Doctors Data:', availableDoctors);
+      
+      // Extract unique specializations from available doctors
+      let uniqueSpecializations = [];
+      
+      if (Array.isArray(availableDoctors)) {
+        uniqueSpecializations = [...new Set(
+          availableDoctors
+            .filter(doc => doc && doc.specialization && typeof doc.specialization === 'string')
+            .map(doc => doc.specialization)
+            .filter(spec => spec && spec.trim() !== '')
+        )];
+      }
+      
+      console.log('🎯 Extracted Specializations:', uniqueSpecializations);
+      
+      // If no specializations found or they're empty, use defaults
+      if (uniqueSpecializations.length === 0) {
+        uniqueSpecializations = [
+          'General Medicine',
+          'Cardiology',
+          'Neurology',
+          'Orthopedics',
+          'Pediatrics',
+          'Dermatology',
+          'Gynecology',
+          'Ophthalmology',
+          'ENT',
+          'Psychiatry',
+          'Dentistry',
+          'Radiology',
+          'Anesthesiology',
+          'Emergency Medicine'
+        ];
+        console.log('🔄 Using default specializations');
+      }
+      
+      setSpecializations(uniqueSpecializations);
+      
+      // Set default specialization if none selected
+      if (!formData.specialization && uniqueSpecializations.length > 0) {
+        setFormData(prev => ({
+          ...prev,
+          specialization: uniqueSpecializations[0]
+        }));
+      }
+    } catch (error) {
+      console.error('❌ Error fetching doctor information:', error);
+      showMessage('error', 'Failed to load doctor information');
+      
+      // Fallback to default specializations
+      const defaultSpecializations = [
+        'General Medicine',
+        'Cardiology',
+        'Neurology',
+        'Orthopedics',
+        'Pediatrics',
+        'Dermatology',
+        'Gynecology',
+        'Ophthalmology',
+        'ENT',
+        'Psychiatry',
+        'Dentistry',
+        'Radiology',
+        'Anesthesiology',
+        'Emergency Medicine'
+      ];
+      setSpecializations(defaultSpecializations);
+      
+      // Only update specialization if it's not already set
+      setFormData(prev => ({
+        ...prev,
+        specialization: prev.specialization || defaultSpecializations[0]
+      }));
+    }
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -238,18 +294,42 @@ const fetchSpecializations = async () => {
   };
 
   const fetchEmployees = async () => {
-    const empList = await apiService.getEmployees();
-    setEmployees(empList);
+    try {
+      const empList = await apiService.getEmployees();
+      setEmployees(empList);
+    } catch (error) {
+      console.error('Error fetching employees:', error);
+    }
   };
 
   const fetchSchedules = async () => {
-    const data = await apiService.getSchedules();
-    setSchedules(data);
+    try {
+      const response = await fetch('/api/schedules', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('careconnect_token')}`
+        }
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to fetch schedules');
+      setSchedules(data);
+    } catch (error) {
+      console.error('Error fetching schedules:', error);
+    }
   };
 
   const fetchAppointments = async () => {
-    const data = await apiService.getAppointments();
-    setAppointments(data);
+    try {
+      const response = await fetch('/api/appointments', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('careconnect_token')}`
+        }
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to fetch appointments');
+      setAppointments(data);
+    } catch (error) {
+      console.error('Error fetching appointments:', error);
+    }
   };
 
   const handleEmployeeSubmit = async (e) => {
@@ -270,7 +350,7 @@ const fetchSpecializations = async () => {
         })
       };
 
-      await apiService.registerEmployee(employeeData);
+      const user = await apiService.registerEmployee(employeeData);
       showMessage('success', 'Employee added successfully');
       setShowEmployeeForm(false);
       setFormData({
@@ -438,3 +518,5 @@ const fetchSpecializations = async () => {
       return <MainDashboard />;
   }
 };
+
+export default AdminDashboard;
