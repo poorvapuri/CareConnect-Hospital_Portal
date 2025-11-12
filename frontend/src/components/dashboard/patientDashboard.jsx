@@ -236,42 +236,176 @@ export const PatientDashboard = () => {
 
   // View Handlers
   if (view === 'book-appointment') {
-    return <BookAppointment />;
-  }
+  const [selectedDoctor, setSelectedDoctor] = useState('');
+  const [selectedDate, setSelectedDate] = useState('');
+  const [selectedTime, setSelectedTime] = useState('');
+  const [reason, setReason] = useState('');
+  const [availableSlots, setAvailableSlots] = useState([]);
+
+  useEffect(() => {
+    if (selectedDoctor && selectedDate) fetchAvailableSlots();
+  }, [selectedDoctor, selectedDate]);
+
+  const fetchAvailableSlots = async () => {
+    try {
+      const slots = await apiService.getAvailableSlots(selectedDoctor, selectedDate);
+      setAvailableSlots(slots);
+    } catch {
+      setAvailableSlots(['09:00', '10:00', '11:00', '14:00', '15:00', '16:00']);
+    }
+  };
+
+  const handleBooking = async () => {
+    try {
+      await apiService.createAppointment({
+        patientId: currentUser.id,
+        doctorId: selectedDoctor,
+        date: selectedDate,
+        time: selectedTime,
+        reason,
+        status: 'Scheduled',
+      });
+      showMessage('success', 'Appointment booked successfully!');
+      triggerRefresh();
+      setView('my-appointments');
+    } catch {
+      showMessage('error', 'Failed to book appointment');
+    }
+  };
+
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const minDate = tomorrow.toISOString().split('T')[0];
+
+  return (
+    <div className="section book-appointment-page">
+      <h2 className="page-title">🩺 Book New Appointment</h2>
+
+      <div className="booking-card glass-card">
+        <div className="form-group">
+          <label>Select Doctor</label>
+          <select
+            value={selectedDoctor}
+            onChange={e => setSelectedDoctor(e.target.value)}
+            className="styled-select"
+          >
+            <option value="">Choose a Doctor</option>
+            {doctors.map(doc => (
+              <option key={doc.id} value={doc.id}>
+                Dr. {doc.name} — {doc.specialization || 'General Medicine'}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="form-group">
+          <label>Select Date</label>
+          <input
+            type="date"
+            className="styled-input"
+            value={selectedDate}
+            onChange={e => setSelectedDate(e.target.value)}
+            min={minDate}
+          />
+        </div>
+
+        {selectedDoctor && selectedDate && (
+          <div className="form-group">
+            <label>Available Time Slots</label>
+            <div className="slot-grid">
+              {availableSlots.map(slot => (
+                <button
+                  key={slot}
+                  className={`slot-btn ${selectedTime === slot ? 'selected' : ''}`}
+                  onClick={() => setSelectedTime(slot)}
+                >
+                  {slot}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="form-group">
+          <label>Reason for Visit</label>
+          <textarea
+            className="styled-textarea"
+            value={reason}
+            onChange={e => setReason(e.target.value)}
+            placeholder="Describe your symptoms or reason for visit"
+            rows="3"
+          />
+        </div>
+
+        {selectedTime && (
+          <div className="booking-summary">
+            <h3>Appointment Summary</h3>
+            <p><strong>Doctor:</strong> {doctors.find(d => d.id == selectedDoctor)?.name}</p>
+            <p><strong>Date:</strong> {new Date(selectedDate).toLocaleDateString()}</p>
+            <p><strong>Time:</strong> {selectedTime}</p>
+            <button onClick={handleBooking} className="btn btn-primary confirm-btn">
+              ✅ Confirm Booking
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 
   if (view === 'available-doctors') {
     return (
-      <div className="section">
-        <h2>All Doctors</h2>
+      <div className="section doctors-page">
+        <h2 className="page-title">👨‍⚕️ All Doctors</h2>
+  
         <div className="doctors-grid">
+          {doctors.length === 0 && (
+            <p className="no-data">No doctors available right now.</p>
+          )}
+  
           {doctors.map(doctor => (
-            <div key={doctor.id} className="doctor-card">
+            <div key={doctor.id} className="doctor-card glass-card">
               <div className="doctor-avatar">
-                {doctor.name.split(' ').map(n => n[0]).join('')}
+                {doctor.name
+                  .split(' ')
+                  .map(n => n[0])
+                  .join('')
+                  .toUpperCase()}
               </div>
-              <h3>{doctor.name}</h3>
-              <p className="specialization">{doctor.specialization || 'General Medicine'}</p>
-              <p className="qualification">{doctor.qualification || 'MBBS'}</p>
-              <div className="availability-status">
-                {doctor.available ? '🟢 Available Today' : '🔴 Not Available'}
+
+  
+              <div className="doctor-info">
+                <h3 className="doctor-name">{doctor.name}</h3>
+                <p className="specialization">
+                  🩺 {doctor.specialization || 'General Medicine'}
+                </p>
+                <p className="qualification">
+                  🎓 {doctor.qualification || 'MBBS'}
+                </p>
+  
+  
+                <div className="working-hours">
+                  <p><strong>Working Hours:</strong></p>
+                  <p>Mon – Fri : 9 AM – 5 PM</p>
+                  <p>Sat : 9 AM – 1 PM</p>
+                </div>
+  
+                <button
+                  onClick={() => setView('book-appointment')}
+                  className="btn btn-primary book-btn"
+                >
+                  ➕ Book Appointment
+                </button>
+
               </div>
-              <div className="doctor-schedule">
-                <p><strong>Working Hours:</strong></p>
-                <p>Mon-Fri: 9:00 AM - 5:00 PM</p>
-                <p>Sat: 9:00 AM - 1:00 PM</p>
-              </div>
-              <button 
-                onClick={() => setView('book-appointment')}
-                className="btn-primary"
-              >
-                Book Appointment
-              </button>
             </div>
           ))}
         </div>
       </div>
     );
   }
+  
 
   if (view === 'my-appointments') {
     const upcomingAppointments = appointments.filter(a => 
@@ -281,11 +415,11 @@ export const PatientDashboard = () => {
       new Date(a.date) < new Date() || a.status === 'Completed'
     );
     const cancelledAppointments = appointments.filter(a => a.status === 'Cancelled');
-
+  
     return (
-      <div className="section">
-        <h2>My Appointments</h2>
-        
+      <div className="section appointments-page">
+        <h2 className="page-title">📅 My Appointments</h2>
+  
         <div className="appointment-tabs">
           <button 
             className={`tab-btn ${activeTab === 'upcoming' ? 'active' : ''}`}
@@ -306,113 +440,149 @@ export const PatientDashboard = () => {
             Cancelled ({cancelledAppointments.length})
           </button>
         </div>
-
+  
         <div className="appointments-list">
-          {activeTab === 'upcoming' && upcomingAppointments.map(apt => (
-            <div key={apt.id} className="appointment-card">
-              <div className="appointment-header">
-                <h3>Dr. {apt.doctor_name}</h3>
-                <span className={`status ${apt.status}`}>{apt.status}</span>
-              </div>
-              <div className="appointment-body">
-                <p>📅 {new Date(apt.date).toLocaleDateString()}</p>
-                <p>⏰ {apt.time}</p>
-                <p>📝 {apt.reason || 'General Consultation'}</p>
-                <p>💰 Payment: {apt.payment_status || 'Pending'}</p>
-              </div>
-              <div className="appointment-actions">
-                <button 
-                  onClick={() => openModal('Update Appointment', 
-                    <UpdateAppointment appointment={apt} />
-                  )}
-                  className="btn-secondary btn-small"
-                >
-                  Reschedule
-                </button>
-                <button 
-                  onClick={() => handleDeleteAppointment(apt.id)}
-                  className="btn-danger btn-small"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          ))}
-
-          {activeTab === 'past' && pastAppointments.map(apt => (
-            <div key={apt.id} className="appointment-card">
-              <div className="appointment-header">
-                <h3>Dr. {apt.doctor_name}</h3>
-                <span className={`status ${apt.status}`}>{apt.status}</span>
-              </div>
-              <div className="appointment-body">
-                <p>📅 {new Date(apt.date).toLocaleDateString()}</p>
-                <p>⏰ {apt.time}</p>
-                <p>📝 {apt.reason || 'General Consultation'}</p>
-              </div>
-              <div className="appointment-actions">
-                <button className="btn-primary btn-small">
-                  View Details
-                </button>
-                <button 
-                  onClick={() => setView('prescriptions')}
-                  className="btn-secondary btn-small"
-                >
-                  View Prescription
-                </button>
-              </div>
-            </div>
-          ))}
-
-          {activeTab === 'cancelled' && cancelledAppointments.map(apt => (
-            <div key={apt.id} className="appointment-card cancelled">
-              <div className="appointment-header">
-                <h3>Dr. {apt.doctor_name}</h3>
-                <span className="status Cancelled">Cancelled</span>
-              </div>
-              <div className="appointment-body">
-                <p>📅 {new Date(apt.date).toLocaleDateString()}</p>
-                <p>⏰ {apt.time}</p>
-              </div>
-            </div>
-          ))}
+          {loading ? (
+            <p className="loading-text">Loading appointments...</p>
+          ) : (
+            <>
+              {activeTab === 'upcoming' && upcomingAppointments.length === 0 && (
+                <p className="no-data">No upcoming appointments</p>
+              )}
+              {activeTab === 'past' && pastAppointments.length === 0 && (
+                <p className="no-data">No past appointments</p>
+              )}
+              {activeTab === 'cancelled' && cancelledAppointments.length === 0 && (
+                <p className="no-data">No cancelled appointments</p>
+              )}
+  
+              {activeTab === 'upcoming' &&
+                upcomingAppointments.map(apt => (
+                  <div key={apt.id} className="appointment-card glass-card">
+                    <div className="appointment-header">
+                      <h3>🩺 Dr. {apt.doctor_name}</h3>
+                      <span className={`status-badge ${apt.status.toLowerCase()}`}>
+                        {apt.status}
+                      </span>
+                    </div>
+                    <div className="appointment-body">
+                      <p>📆 <strong>Date:</strong> {new Date(apt.date).toLocaleDateString()}</p>
+                      <p>⏰ <strong>Time:</strong> {apt.time}</p>
+                      <p>📝 <strong>Reason:</strong> {apt.reason || 'General Consultation'}</p>
+                      <p>💰 <strong>Payment:</strong> {apt.payment_status || 'Pending'}</p>
+                    </div>
+                    <div className="appointment-actions">
+                      <button
+                        onClick={() =>
+                          openModal(
+                            'Update Appointment',
+                            <UpdateAppointment appointment={apt} />
+                          )
+                        }
+                        className="btn btn-edit"
+                      >
+                        ✏️ Reschedule
+                      </button>
+                      <button
+                        onClick={() => handleDeleteAppointment(apt.id)}
+                        className="btn btn-danger"
+                      >
+                        ❌ Cancel
+                      </button>
+                    </div>
+                  </div>
+                ))}
+  
+              {activeTab === 'past' &&
+                pastAppointments.map(apt => (
+                  <div key={apt.id} className="appointment-card glass-card past">
+                    <div className="appointment-header">
+                      <h3>Dr. {apt.doctor_name}</h3>
+                      <span className="status-badge completed">{apt.status}</span>
+                    </div>
+                    <div className="appointment-body">
+                      <p>📆 {new Date(apt.date).toLocaleDateString()}</p>
+                      <p>⏰ {apt.time}</p>
+                      <p>📝 {apt.reason || 'General Consultation'}</p>
+                    </div>
+                    <div className="appointment-actions">
+                      <button className="btn btn-primary btn-small">
+                        View Details
+                      </button>
+                      <button
+                        onClick={() => setView('prescriptions')}
+                        className="btn btn-secondary btn-small"
+                      >
+                        View Prescription
+                      </button>
+                    </div>
+                  </div>
+                ))}
+  
+              {activeTab === 'cancelled' &&
+                cancelledAppointments.map(apt => (
+                  <div key={apt.id} className="appointment-card glass-card cancelled">
+                    <div className="appointment-header">
+                      <h3>Dr. {apt.doctor_name}</h3>
+                      <span className="status-badge cancelled">Cancelled</span>
+                    </div>
+                    <div className="appointment-body">
+                      <p>📆 {new Date(apt.date).toLocaleDateString()}</p>
+                      <p>⏰ {apt.time}</p>
+                    </div>
+                  </div>
+                ))}
+            </>
+          )}
         </div>
       </div>
     );
   }
+  
 
   if (view === 'prescriptions') {
     return (
-      <div className="section">
-        <h2>My Prescriptions</h2>
-        <div className="prescriptions-list">
+      <div className="section prescriptions-page">
+        <h2 className="page-title"> My Prescriptions</h2>
+  
+        <div className="prescriptions-grid">
+          {prescriptions.length === 0 && (
+            <p className="no-data">No prescriptions found.</p>
+          )}
+  
           {prescriptions.map(pres => (
-            <div key={pres.id} className="prescription-card">
+            <div key={pres.id} className="prescription-card glass-card">
               <div className="prescription-header">
-                <h3>{pres.medication}</h3>
-                <span className="date">{new Date(pres.date).toLocaleDateString()}</span>
+                <div className="pill-icon"></div>
+                <div className="prescription-title">
+                  <h3>{pres.medication}</h3>
+                  <span className="date">
+                    {new Date(pres.date).toLocaleDateString()}
+                  </span>
+                </div>
               </div>
+  
               <div className="prescription-body">
-                <p><strong>Prescribed by:</strong> Dr. {pres.doctor_name}</p>
-                <p><strong>Dosage:</strong> {pres.dosage}</p>
-                <p><strong>Duration:</strong> {pres.duration || '7 days'}</p>
-                <p><strong>Instructions:</strong> {pres.instructions}</p>
+                <p><strong>👨‍⚕️ Prescribed by:</strong> Dr. {pres.doctor_name}</p>
+                <p><strong>💉 Dosage:</strong> {pres.dosage}</p>
+                <p><strong>🕒 Duration:</strong> {pres.duration || '7 days'}</p>
+                <p><strong>📋 Instructions:</strong> {pres.instructions}</p>
+  
                 {pres.lab_test_required && (
                   <div className="lab-test-alert">
-                    ⚠️ Lab Test Required: {pres.lab_test_name}
+                    ⚠️ <strong>Lab Test Required:</strong> {pres.lab_test_name}
                   </div>
                 )}
               </div>
-              <div className="prescription-actions">
-                <button className="btn-primary btn-small">Print</button>
-                <button className="btn-secondary btn-small">Download PDF</button>
-              </div>
+  
+              
             </div>
           ))}
         </div>
       </div>
     );
   }
+  
 
   if (view === 'lab-reports') {
     return (
@@ -492,7 +662,7 @@ export const PatientDashboard = () => {
           className="stat-card clickable" 
           onClick={() => setView('prescriptions')}
         >
-          <div className="stat-icon">💊</div>
+          <div className="stat-icon"></div>
           <h3>Active Prescriptions</h3>
           <p className="stat-number">{prescriptions.length}</p>
         </div>

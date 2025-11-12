@@ -525,83 +525,72 @@ export const ReceptionistDashboard = () => {
   }
 
   // Main Dashboard
-  return (
-    <div className="section">
-      <h2>Reception Dashboard</h2>
-      
-      <div className="stats-grid">
-        <div 
-          className="stat-card clickable"
-          onClick={() => setView('doctors-list')}
-        >
-          <div className="stat-icon">👨‍⚕️</div>
-          <h3>Doctors On Duty</h3>
-          <p className="stat-number">{doctors.filter(d => d.available).length}</p>
-        </div>
-        
-        <div 
-          className="stat-card clickable"
-          onClick={() => setView('appointments-crud')}
-        >
-          <div className="stat-icon">📅</div>
-          <h3>Today's Appointments</h3>
-          <p className="stat-number">{appointments.length}</p>
-        </div>
-        
-        <div 
-          className="stat-card clickable"
-          onClick={() => setView('payment-desk')}
-        >
-          <div className="stat-icon">💰</div>
-          <h3>Pending Payments</h3>
-          <p className="stat-number">
-            {appointments.filter(a => a.payment_status !== 'Paid').length}
-          </p>
-        </div>
-        
-        <div className="stat-card">
-          <div className="stat-icon">💵</div>
-          <h3>Today's Collection</h3>
-          <p className="stat-number">
-            ${appointments.filter(a => a.payment_status === 'Paid')
-              .reduce((sum, a) => sum + (a.payment_amount || 0), 0)}
-          </p>
-        </div>
+ // Main Dashboard
+return (
+  <div className="section receptionist-dashboard">
+    <h2>Reception Dashboard</h2>
+
+    <div className="stats-grid two-cards">
+      {/* 👨‍⚕️ Doctors on Duty */}
+      <div
+        className="stat-card clickable"
+        onClick={() => setView('doctors-list')}
+      >
+        <div className="stat-icon">👨‍⚕️</div>
+        <h3>Doctors On Duty</h3>
+        <p className="stat-number">
+          {doctors.filter((d) => d.available).length}
+        </p>
       </div>
 
-      <div className="quick-actions">
-        <h3>Quick Actions</h3>
-        <div className="action-grid">
-          <button 
-            onClick={() => setView('doctors-list')}
-            className="action-btn"
-          >
-            View Doctor Schedules
-          </button>
-          <button 
-            onClick={() => openModal('Walk-in Registration', 
-              <WalkInBooking doctorId={doctors[0]?.id} time="10:00" />
-            )}
-            className="action-btn"
-          >
-            Register Walk-in
-          </button>
-          <button 
-            onClick={() => setView('payment-desk')}
-            className="action-btn"
-          >
-            Process Payments
-          </button>
-          <button 
-            onClick={() => openModal('Create Lab Test', 
-              <CreateLabTestFromPrescription />
-            )}
-            className="action-btn"
-          >
-            Create Lab Test
-          </button>
-        </div>
+      {/* 📅 Today's Appointments */}
+      <div
+        className="stat-card clickable"
+        onClick={() => setView('appointments-crud')}
+      >
+        <div className="stat-icon">📅</div>
+        <h3>Today's Appointments</h3>
+        <p className="stat-number">{appointments.length}</p>
       </div>
     </div>
-  );
+
+    {/* <div className="quick-actions">
+      <h3>Quick Actions</h3>
+      <div className="action-grid">
+        <button
+          onClick={() => setView('doctors-list')}
+          className="action-btn"
+        >
+          View Doctor Schedules
+        </button>
+        <button
+          onClick={() =>
+            openModal(
+              'Walk-in Registration',
+              <WalkInBooking doctorId={doctors[0]?.id} time="10:00" />
+            )
+          }
+          className="action-btn"
+        >
+          Register Walk-in
+        </button>
+        <button
+          onClick={() => setView('payment-desk')}
+          className="action-btn"
+        >
+          Process Payments
+        </button>
+        <button
+          onClick={() =>
+            openModal('Create Lab Test', <CreateLabTestFromPrescription />)
+          }
+          className="action-btn"
+        >
+          Create Lab Test
+        </button>
+      </div>
+    </div> */}
+  </div>
+);
+
 };

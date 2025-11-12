@@ -604,23 +604,7 @@ export const DoctorDashboard = () => {
         )}
       </div>
 
-      <div className="quick-actions">
-        <h3>Quick Actions</h3>
-        <div className="action-grid">
-          <button 
-            onClick={() => setView('calendar')}
-            className="action-btn"
-          >
-            View Calendar
-          </button>
-          <button 
-            onClick={() => setView('prescriptions')}
-            className="action-btn"
-          >
-            Manage Prescriptions
-          </button>
-        </div>
-      </div>
+      
     </div>
   );
 };

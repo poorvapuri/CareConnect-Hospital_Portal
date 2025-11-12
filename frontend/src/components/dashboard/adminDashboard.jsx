@@ -283,19 +283,23 @@ export const AdminDashboard = () => {
 
       setSpecializations(combined);
 
-      if (!formData.specialization && combined.length > 0) {
-        setFormData(prev => ({ ...prev, specialization: combined[0] }));
-      }
-    } catch (error) {
-      console.error('❌ Error fetching specializations:', error);
-      showMessage && showMessage('error', 'Failed to load doctor specializations');
-      // fallback to defaults
-      setSpecializations(defaultSpecializations);
-      if (!formData.specialization) {
-        setFormData(prev => ({ ...prev, specialization: defaultSpecializations[0] }));
-      }
+    setSpecializations(uniqueSpecializations);
+    if (!formData.specialization && uniqueSpecializations.length > 0) {
+      setFormData(prev => ({ ...prev, specialization: uniqueSpecializations[0] }));
     }
-  };
+  } catch (error) {
+    console.error('Error fetching specializations:', error);
+    showMessage && showMessage('error', 'Failed to load doctor specializations');
+
+    // fallback
+    setSpecializations([
+      'General Medicine', 'Cardiology', 'Neurology', 'Orthopedics', 'Pediatrics',
+      'Dermatology', 'Gynecology', 'Ophthalmology', 'ENT', 'Psychiatry',
+      'Dentistry', 'Radiology', 'Anesthesiology', 'Emergency Medicine'
+    ]);
+  }
+};
+
 
   const fetchData = async () => {
     setLoading(true);
