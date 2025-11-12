@@ -278,27 +278,13 @@ export const AdminDashboard = () => {
         ];
       }
 
-      setSpecializations(uniqueSpecializations);
-      if (!formData.specialization && uniqueSpecializations.length > 0) {
-        setFormData(prev => ({ ...prev, specialization: uniqueSpecializations[0] }));
-      }
-    } catch (error) {
-      console.error('Error fetching specializations:', error);
-      showMessage && showMessage('error', 'Failed to load doctor specializations');
-    }
-
-    // ✅ Merge with defaults to show all unique options
-    const combined = [...new Set([...defaultSpecializations, ...uniqueSpecializations])];
-
-    setSpecializations(combined);
-
-    // Set first option as default if not already selected
-    if (!formData.specialization) {
-      setFormData(prev => ({ ...prev, specialization: combined[0] }));
+    setSpecializations(uniqueSpecializations);
+    if (!formData.specialization && uniqueSpecializations.length > 0) {
+      setFormData(prev => ({ ...prev, specialization: uniqueSpecializations[0] }));
     }
   } catch (error) {
-    console.error('❌ Error fetching specializations:', error);
-    showMessage('error', 'Failed to load doctor information');
+    console.error('Error fetching specializations:', error);
+    showMessage && showMessage('error', 'Failed to load doctor specializations');
 
     // fallback
     setSpecializations([
