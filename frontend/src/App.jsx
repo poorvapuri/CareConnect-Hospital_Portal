@@ -402,28 +402,10 @@ function App() {
               Dashboard
             </button>
             <button 
-              onClick={() => setView('pending-tests')} 
-              className={view === 'pending-tests' ? 'active' : ''}
-            >
-              Pending Tests
-            </button>
-            <button 
-              onClick={() => setView('payment-verification')} 
-              className={view === 'payment-verification' ? 'active' : ''}
-            >
-              Payment Verification
-            </button>
-            <button 
               onClick={() => setView('lab-tests')} 
               className={view === 'lab-tests' ? 'active' : ''}
             >
               Lab Tests
-            </button>
-            <button 
-              onClick={() => setView('lab-reports')} 
-              className={view === 'lab-reports' ? 'active' : ''}
-            >
-              Upload Reports
             </button>
           </>
         )}
