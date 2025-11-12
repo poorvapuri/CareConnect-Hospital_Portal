@@ -319,30 +319,9 @@ function App() {
             >
               Calendar
             </button>
-            <button 
-              onClick={() => setView('daily-appointments')} 
-              className={view === 'daily-appointments' ? 'active' : ''}
-            >
-              Today's Appointments
-            </button>
-            <button 
-              onClick={() => setView('prescriptions')} 
-              className={view === 'prescriptions' ? 'active' : ''}
-            >
-              Prescriptions
-            </button>
-            <button 
-              onClick={() => setView('lab-reports')} 
-              className={view === 'lab-reports' ? 'active' : ''}
-            >
-              Lab Reports
-            </button>
-            <button 
-              onClick={() => setView('lab-test-notes')} 
-              className={view === 'lab-test-notes' ? 'active' : ''}
-            >
-              Lab Test Notes
-            </button>
+            
+            
+            
           </>
         )}
         
@@ -354,42 +333,37 @@ function App() {
             >
               Dashboard
             </button>
-            <button 
+            {/* <button 
               onClick={() => setView('doctors-list')} 
               className={view === 'doctors-list' ? 'active' : ''}
             >
               Doctors List
-            </button>
+            </button> */}
             <button 
               onClick={() => setView('appointments')} 
               className={view === 'appointments' ? 'active' : ''}
             >
               Appointments
             </button>
-            <button 
-              onClick={() => setView('walk-in')} 
-              className={view === 'walk-in' ? 'active' : ''}
-            >
-              Walk-in Patients
-            </button>
-            <button 
+            
+            {/* <button 
               onClick={() => setView('checkin')} 
               className={view === 'checkin' ? 'active' : ''}
             >
               Check-in
-            </button>
+            </button> */}
             <button 
               onClick={() => setView('billing')} 
               className={view === 'billing' ? 'active' : ''}
             >
               Billing & Payments
             </button>
-            <button 
+            {/* <button 
               onClick={() => setView('lab-test-prescriptions')} 
               className={view === 'lab-test-prescriptions' ? 'active' : ''}
             >
               Lab Test Prescriptions
-            </button>
+            </button> */}
           </>
         )}
         
@@ -466,12 +440,7 @@ function App() {
             >
               Prescriptions
             </button>
-            <button 
-              onClick={() => setView('medical-history')} 
-              className={view === 'medical-history' ? 'active' : ''}
-            >
-              Medical History
-            </button>
+            
           </>
         )}
       </nav>
