@@ -164,4 +164,73 @@ router.post('/walk-in', authenticateToken, authorizeRoles('Receptionist'), async
   }
 });
 
+// ✅ Update appointment (reschedule)
+router.put('/:id', authenticateToken, async (req, res) => {
+  try {
+    const { date, time, reason } = req.body;
+    const appointment = await Appointment.findById(req.params.id);
+
+    if (!appointment) {
+      return res.status(404).json({ error: 'Appointment not found' });
+    }
+
+    // ✅ Authorization check (corrected)
+    if (req.user.role === 'Patient') {
+      const patientFromDB = String(appointment.patient_id);
+      const loggedInPatient = String(req.user.id);
+
+      if (patientFromDB !== loggedInPatient) {
+        console.log(`🚫 Unauthorized update: patient ${loggedInPatient} tried to update ${patientFromDB}`);
+        return res.status(403).json({ error: 'Unauthorized to update this appointment' });
+      }
+    }
+
+    // ✅ Update the appointment
+    const updated = await Appointment.update(req.params.id, { date, time, reason });
+    console.log(`✅ Appointment ${req.params.id} updated successfully by Patient ${req.user.id}`);
+    res.json({ message: 'Appointment updated successfully', appointment: updated });
+  } catch (error) {
+    console.error('❌ Error updating appointment:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+
+// ✅ Cancel appointment
+router.delete('/:id', authenticateToken, async (req, res) => {
+  try {
+    // 1️⃣ Fetch the appointment
+    const appointment = await Appointment.findById(req.params.id);
+
+    if (!appointment) {
+      return res.status(404).json({ error: 'Appointment not found' });
+    }
+
+    // 2️⃣ Authorization check for Patient
+    if (req.user.role === 'Patient') {
+      const patientFromDB = String(appointment.patient_id);
+      const loggedInPatient = String(req.user.id);
+
+      if (patientFromDB !== loggedInPatient) {
+        console.log(`🚫 Unauthorized cancel attempt: Patient ${loggedInPatient} tried to cancel Appointment ${req.params.id} (belongs to Patient ${patientFromDB})`);
+        return res.status(403).json({ error: 'Unauthorized to cancel this appointment' });
+      }
+    }
+
+    // 3️⃣ Perform soft delete (status = 'Cancelled') or hard delete
+    // If you’re using a status column, prefer soft delete:
+    await Appointment.update(req.params.id, { status: 'Cancelled' });
+
+    // Otherwise, if you actually delete from DB:
+    // await Appointment.delete(req.params.id);
+
+    console.log(`🗑️ Appointment ${req.params.id} cancelled by ${req.user.role} (${req.user.id})`);
+    res.json({ message: 'Appointment cancelled successfully' });
+  } catch (error) {
+    console.error('❌ Error cancelling appointment:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+
 export default router;

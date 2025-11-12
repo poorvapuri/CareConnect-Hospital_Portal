@@ -92,6 +92,24 @@ class ApiService {
     });
   }
 
+
+  // ✅ Update an appointment (for rescheduling)
+// ✅ Reschedule appointment
+async updateAppointment(id, updates) {
+  return await this.request(`/appointments/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(updates)
+  });
+}
+
+// ✅ Cancel appointment
+async deleteAppointment(id) {
+  return await this.request(`/appointments/${id}`, {
+    method: 'DELETE'
+  });
+}
+
+
   // Prescription endpoints
   async getPrescriptions(filters = {}) {
     const params = new URLSearchParams(filters).toString();
