@@ -102,7 +102,7 @@ router.get('/available', authenticateToken, async (req, res) => {
         name,
         email,
         role,
-        specialization
+        COALESCE(specialization, 'General Medicine') as specialization
       FROM users 
       WHERE role = 'Doctor'
       ORDER BY name
@@ -113,7 +113,15 @@ router.get('/available', authenticateToken, async (req, res) => {
     
     console.log('🏥 Available Doctors:', doctors);
     
-    res.json(doctors);
+    // Ensure specialization is always a string
+    const formattedDoctors = doctors.map(doc => ({
+      ...doc,
+      specialization: doc.specialization && typeof doc.specialization === 'string' 
+        ? doc.specialization 
+        : 'General Medicine'
+    }));
+    
+    res.json(formattedDoctors);
   } catch (error) {
     console.error('❌ Error fetching available doctors:', error);
     res.status(500).json({ error: error.message });
