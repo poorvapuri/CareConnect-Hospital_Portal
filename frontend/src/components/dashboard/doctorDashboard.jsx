@@ -276,38 +276,40 @@ export const DoctorDashboard = () => {
     });
 
     const handleSave = async () => {
-      try {
-        const data = {
-          patientId: appointment.patient_id,
-          appointmentId: appointment.id,
-          ...prescription
-        };
-
-        if (existing) {
-          await apiService.updatePrescription(existing.id, data);
-          showMessage('success', 'Prescription updated');
-        } else {
-          await apiService.createPrescription(data);
-          showMessage('success', 'Prescription created');
-        }
-
-        // If lab test is required, create a request for receptionist
-        if (prescription.requiresLabTest) {
-          await apiService.createLabTestRequest({
-            patientId: appointment.patient_id,
-            doctorId: currentUser.id,
-            testName: prescription.labTestName,
-            instructions: prescription.labTestInstructions
-          });
-          showMessage('info', 'Lab test request sent to reception for pricing');
-        }
-
-        closeModal();
-        triggerRefresh();
-      } catch (error) {
-        showMessage('error', 'Failed to save prescription');
-      }
+  try {
+    const data = {
+      patientId: appointment.patient_id,
+      appointmentId: appointment.id,
+      ...prescription
     };
+
+    if (existing) {
+      await apiService.updatePrescription(existing.id, data);
+      showMessage('success', 'Prescription updated');
+    } else {
+      await apiService.createPrescription(data);
+      showMessage('success', 'Prescription created');
+    }
+
+    // ✅ FIXED: Correctly create lab test in DB
+    if (prescription.requiresLabTest && prescription.labTestName) {
+      await apiService.createLabTest({
+        patientId: appointment.patient_id,
+        testName: prescription.labTestName,
+        date: new Date().toISOString().split('T')[0],
+        notes: prescription.labTestInstructions
+      });
+      showMessage('info', 'Lab test added successfully');
+    }
+
+    closeModal();
+    triggerRefresh();
+  } catch (error) {
+    console.error('Error saving prescription or lab test:', error);
+    showMessage('error', 'Failed to save prescription or lab test');
+  }
+};
+
 
     return (
       <div className="prescription-form">
