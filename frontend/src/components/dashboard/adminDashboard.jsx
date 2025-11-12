@@ -238,7 +238,25 @@ export const AdminDashboard = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // fetchSpecializations - safe, self-contained and merges defaults
   const fetchSpecializations = async () => {
+    const defaultSpecializations = [
+      'General Medicine',
+      'Cardiology',
+      'Neurology',
+      'Orthopedics',
+      'Pediatrics',
+      'Dermatology',
+      'Gynecology',
+      'Ophthalmology',
+      'ENT',
+      'Psychiatry',
+      'Dentistry',
+      'Radiology',
+      'Anesthesiology',
+      'Emergency Medicine'
+    ];
+
     try {
       let availableDoctors = [];
       try {
@@ -247,6 +265,7 @@ export const AdminDashboard = () => {
         else if (res && Array.isArray(res.doctors)) availableDoctors = res.doctors;
         else if (res && Array.isArray(res.data)) availableDoctors = res.data;
       } catch (err) {
+        // ignore small error - we'll fallback to defaults below
         console.warn('fetchSpecializations: getDoctors failed', err);
       }
 
@@ -259,24 +278,10 @@ export const AdminDashboard = () => {
         )];
       }
 
-      if (uniqueSpecializations.length === 0) {
-        uniqueSpecializations = [
-          'General Medicine',
-          'Cardiology',
-          'Neurology',
-          'Orthopedics',
-          'Pediatrics',
-          'Dermatology',
-          'Gynecology',
-          'Ophthalmology',
-          'ENT',
-          'Psychiatry',
-          'Dentistry',
-          'Radiology',
-          'Anesthesiology',
-          'Emergency Medicine'
-        ];
-      }
+      // combine defaults with discovered
+      const combined = [...new Set([...defaultSpecializations, ...uniqueSpecializations])];
+
+      setSpecializations(combined);
 
     setSpecializations(uniqueSpecializations);
     if (!formData.specialization && uniqueSpecializations.length > 0) {
@@ -444,15 +449,16 @@ export const AdminDashboard = () => {
     }
   };
 
-  // Helper: convert ISO time portion to hh:mm AM/PM in IST (used only if no explicit time field)
+  // Helper: convert ISO time portion to hh:mm (24h) or use preserve time if passed
+  // We will prefer to use explicit apt.time if present; otherwise extract time from ISO.
   const extractAndFormatTimeFromISO = (isoString) => {
     try {
       const d = new Date(isoString);
-      return d.toLocaleTimeString('en-IN', {
+      return d.toLocaleTimeString('en-GB', {
         timeZone: 'Asia/Kolkata',
         hour: '2-digit',
         minute: '2-digit',
-        hour12: true
+        hour12: false
       });
     } catch {
       return '';
@@ -507,12 +513,10 @@ export const AdminDashboard = () => {
               const rawDate = apt.date || apt.appointmentDate || null;
               const dateDisplay = rawDate ? formatDateOnlyIST(rawDate) : '';
 
-              // Use explicit time field if provided (preserve previous look)
-              const explicitTime = apt.time || apt.appointmentTime || '';
-              // If explicitTime not present but date contains ISO time, extract & format it
-              let timeDisplay = explicitTime;
+              // Use explicit time field if provided (preserve previous times)
+              let timeDisplay = apt.time || apt.appointmentTime || '';
               if (!timeDisplay && rawDate && /\dT\d/.test(rawDate)) {
-                timeDisplay = extractAndFormatTimeFromISO(rawDate); // e.g. "09:00 AM"
+                timeDisplay = extractAndFormatTimeFromISO(rawDate); // e.g. "09:00"
               }
 
               // doctor name cleanup
