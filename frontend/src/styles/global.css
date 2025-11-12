@@ -1679,7 +1679,7 @@ body {
 }
 
 .tab-btn.active {
-  background: linear-gradient(90deg, #6a11cb 0%, #2575fc 100%);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
 }
 
@@ -1809,7 +1809,9 @@ body {
   width: 70px;
   height: 70px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #6a11cb, #2575fc);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%
+100%
+);
   color: white;
   font-size: 1.5rem;
   font-weight: 600;
@@ -1867,7 +1869,7 @@ body {
 
 .book-btn {
   margin-top: 15px;
-  background: linear-gradient(90deg, #6a11cb 0%, #2575fc 100%);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: #fff;
   border: none;
   padding: 10px 18px;
@@ -1956,7 +1958,7 @@ body {
 }
 
 .slot-btn.selected {
-  background: linear-gradient(90deg, #6a11cb, #2575fc);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   font-weight: 600;
   transform: scale(1.05);
@@ -1973,7 +1975,7 @@ body {
 
 .confirm-btn {
   margin-top: 15px;
-  background: linear-gradient(90deg, #6a11cb 0%, #2575fc 100%);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   padding: 10px 20px;
   border-radius: 10px;
@@ -2073,7 +2075,7 @@ body {
 }
 
 .btn-primary {
-  background: linear-gradient(90deg, #6a11cb, #2575fc);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
 }
 
@@ -2106,7 +2108,9 @@ body {
 .stats-grid.two-cards .stat-card {
   flex: 1;
   min-width: 300px;
-  background: linear-gradient(135deg, #6a11cb, #2575fc);
+background: linear-gradient(135deg, #667eea 0%, #764ba2 100%
+100%
+);
   color: white;
   border-radius: 18px;
   padding: 30px 20px;
@@ -2166,7 +2170,7 @@ body {
 }
 
 .action-btn {
-  background: linear-gradient(90deg, #6a11cb, #2575fc);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   border: none;
   padding: 10px 20px;

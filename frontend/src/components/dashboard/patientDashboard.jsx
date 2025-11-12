@@ -357,7 +357,6 @@ export const PatientDashboard = () => {
   if (view === 'available-doctors') {
     return (
       <div className="section doctors-page">
-        <h2 className="page-title">👨‍⚕️ All Doctors</h2>
   
         <div className="doctors-grid">
           {doctors.length === 0 && (
@@ -395,7 +394,7 @@ export const PatientDashboard = () => {
                   onClick={() => setView('book-appointment')}
                   className="btn btn-primary book-btn"
                 >
-                  ➕ Book Appointment
+                   Book Appointment
                 </button>
 
               </div>
@@ -481,13 +480,13 @@ export const PatientDashboard = () => {
                         }
                         className="btn btn-edit"
                       >
-                        ✏️ Reschedule
+                         Reschedule
                       </button>
                       <button
                         onClick={() => handleDeleteAppointment(apt.id)}
                         className="btn btn-danger"
                       >
-                        ❌ Cancel
+                        Cancel
                       </button>
                     </div>
                   </div>
@@ -662,39 +661,9 @@ export const PatientDashboard = () => {
           className="stat-card clickable" 
           onClick={() => setView('prescriptions')}
         >
-          <div className="stat-icon"></div>
+          <div className="stat-icon">📝</div>
           <h3>Active Prescriptions</h3>
           <p className="stat-number">{prescriptions.length}</p>
-        </div>
-      </div>
-
-      <div className="quick-actions">
-        <h3>Quick Actions</h3>
-        <div className="action-grid">
-          <button 
-            onClick={() => setView('book-appointment')}
-            className="action-btn"
-          >
-            <span>➕</span> Book Appointment
-          </button>
-          <button 
-            onClick={() => setView('available-doctors')}
-            className="action-btn"
-          >
-            <span>👨‍⚕️</span> Find Doctor
-          </button>
-          <button 
-            onClick={() => setView('my-appointments')}
-            className="action-btn"
-          >
-            <span>📋</span> My Appointments
-          </button>
-          <button 
-            onClick={() => setView('lab-reports')}
-            className="action-btn"
-          >
-            <span>📄</span> View Reports
-          </button>
         </div>
       </div>
     </div>
