@@ -198,87 +198,49 @@ export const AdminDashboard = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view]);
 
-  const fetchSpecializations = async () => {
-    try {
-      // Use available doctors endpoint
-      const availableDoctors = await apiService.getAppointments({ endpoint: '/appointments/available' });
-      
-      console.log('🔍 Available Doctors Data:', availableDoctors);
-      
-      // Extract unique specializations from available doctors
-      let uniqueSpecializations = [];
-      
-      if (Array.isArray(availableDoctors)) {
-        uniqueSpecializations = [...new Set(
-          availableDoctors
-            .filter(doc => doc && doc.specialization && typeof doc.specialization === 'string')
-            .map(doc => doc.specialization)
-            .filter(spec => spec && spec.trim() !== '')
-        )];
-      }
-      
-      console.log('🎯 Extracted Specializations:', uniqueSpecializations);
-      
-      // If no specializations found or they're empty, use defaults
-      if (uniqueSpecializations.length === 0) {
-        uniqueSpecializations = [
-          'General Medicine',
-          'Cardiology',
-          'Neurology',
-          'Orthopedics',
-          'Pediatrics',
-          'Dermatology',
-          'Gynecology',
-          'Ophthalmology',
-          'ENT',
-          'Psychiatry',
-          'Dentistry',
-          'Radiology',
-          'Anesthesiology',
-          'Emergency Medicine'
-        ];
-        console.log('🔄 Using default specializations');
-      }
-      
-      setSpecializations(uniqueSpecializations);
-      
-      // Set default specialization if none selected
-      if (!formData.specialization && uniqueSpecializations.length > 0) {
-        setFormData(prev => ({
-          ...prev,
-          specialization: uniqueSpecializations[0]
-        }));
-      }
-    } catch (error) {
-      console.error('❌ Error fetching doctor information:', error);
-      showMessage('error', 'Failed to load doctor information');
-      
-      // Fallback to default specializations
-      const defaultSpecializations = [
-        'General Medicine',
-        'Cardiology',
-        'Neurology',
-        'Orthopedics',
-        'Pediatrics',
-        'Dermatology',
-        'Gynecology',
-        'Ophthalmology',
-        'ENT',
-        'Psychiatry',
-        'Dentistry',
-        'Radiology',
-        'Anesthesiology',
-        'Emergency Medicine'
-      ];
-      setSpecializations(defaultSpecializations);
-      
-      // Only update specialization if it's not already set
-      setFormData(prev => ({
-        ...prev,
-        specialization: prev.specialization || defaultSpecializations[0]
-      }));
+const fetchSpecializations = async () => {
+  try {
+    const defaultSpecializations = [
+      'General Medicine', 'Cardiology', 'Neurology', 'Orthopedics', 'Pediatrics',
+      'Dermatology', 'Gynecology', 'Ophthalmology', 'ENT', 'Psychiatry',
+      'Dentistry', 'Radiology', 'Anesthesiology', 'Emergency Medicine'
+    ];
+
+    // Try fetching available doctors
+    const availableDoctors = await apiService.getAppointments({ endpoint: '/appointments/available' });
+
+    let uniqueSpecializations = [];
+
+    if (Array.isArray(availableDoctors)) {
+      uniqueSpecializations = [...new Set(
+        availableDoctors
+          .filter(doc => doc && doc.specialization)
+          .map(doc => doc.specialization.trim())
+      )];
     }
-  };
+
+    // ✅ Merge with defaults to show all unique options
+    const combined = [...new Set([...defaultSpecializations, ...uniqueSpecializations])];
+
+    setSpecializations(combined);
+
+    // Set first option as default if not already selected
+    if (!formData.specialization) {
+      setFormData(prev => ({ ...prev, specialization: combined[0] }));
+    }
+  } catch (error) {
+    console.error('❌ Error fetching specializations:', error);
+    showMessage('error', 'Failed to load doctor information');
+
+    // fallback
+    setSpecializations([
+      'General Medicine', 'Cardiology', 'Neurology', 'Orthopedics', 'Pediatrics',
+      'Dermatology', 'Gynecology', 'Ophthalmology', 'ENT', 'Psychiatry',
+      'Dentistry', 'Radiology', 'Anesthesiology', 'Emergency Medicine'
+    ]);
+  }
+};
+
 
   const fetchData = async () => {
     setLoading(true);
