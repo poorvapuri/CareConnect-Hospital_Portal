@@ -259,6 +259,21 @@ async getAppointments(filters = {}) {
   async getPatients() {
     return await this.request('/users?role=Patient');
   }
+
+  // ---- Payment API ----
+
+async getPayments(filters = {}) {
+  const params = new URLSearchParams(filters).toString();
+  return await this.request(`/payments${params ? '?' + params : ''}`);
+}
+
+async processAppointmentPayment(appointmentId, paymentData) {
+  return await this.request(`/payments/appointment/${appointmentId}`, {
+    method: 'POST',
+    body: JSON.stringify(paymentData)
+  });
+}
+
 }
 
 export const apiService = new ApiService();

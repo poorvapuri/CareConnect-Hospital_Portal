@@ -16,6 +16,8 @@ import labTestRoutes from './routes/labTests.js';
 import employeeRoutes from './routes/employees.js';
 import doctorRoutes from './routes/doctor.js';
 import scheduleRoutes from './routes/schedules.js';
+import paymentRoutes from './routes/payments.js';
+
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -42,6 +44,7 @@ const limiter = rateLimit({
 
 app.use(limiter);
 
+
 // Logging middleware
 app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
@@ -56,6 +59,7 @@ app.use('/api/lab-tests', labTestRoutes);
 app.use('/api/employees', employeeRoutes);
 app.use('/api/doctors', doctorRoutes);
 app.use('/api/schedules', scheduleRoutes);
+app.use('/api/payments', paymentRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
