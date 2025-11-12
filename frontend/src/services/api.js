@@ -156,6 +156,13 @@ async deleteAppointment(id) {
     });
   }
 
+  async updateLabTest(id, updates) {
+  return await this.request(`/lab-tests/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(updates)
+  });
+}
+
   async uploadLabReport(id, file) {
     const formData = new FormData();
     formData.append('report', file);

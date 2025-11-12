@@ -77,6 +77,21 @@ static async create(labTestData) {
     const result = await pool.query(query, [paymentStatus, id]);
     return result.rows[0];
   }
+static async updateReport(id, { status, report_notes }) {
+  const query = `
+    UPDATE lab_tests
+    SET 
+      status = $1,
+      report_notes = $2,
+      is_cleared = true,
+      cleared_at = CURRENT_TIMESTAMP,
+      updated_at = CURRENT_TIMESTAMP
+    WHERE id = $3
+    RETURNING *;
+  `;
+  const result = await pool.query(query, [status, report_notes, id]);
+  return result.rows[0];
+}
 
   static async uploadReport(id, reportUrl) {
     const query = `
@@ -88,4 +103,6 @@ static async create(labTestData) {
     const result = await pool.query(query, [reportUrl, id]);
     return result.rows[0];
   }
+
+
 }
