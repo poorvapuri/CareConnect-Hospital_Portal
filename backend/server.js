@@ -4,6 +4,8 @@ import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import cors from "cors";
+
 
 // Load environment variables
 dotenv.config({ path: join(dirname(fileURLToPath(import.meta.url)), '.env') });
@@ -60,6 +62,16 @@ app.use('/api/employees', employeeRoutes);
 app.use('/api/doctors', doctorRoutes);
 app.use('/api/schedules', scheduleRoutes);
 app.use('/api/payments', paymentRoutes);
+
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173",
+      "https://care-connect-hospital-portal.vercel.app"
+    ],
+    credentials: true,
+  })
+);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
