@@ -1,4 +1,6 @@
-const API_BASE_URL = "https://careconnect-hospital-portal.onrender.com";
+// const API_BASE_URL = "https://careconnect-hospital-portal.onrender.com";
+const API_BASE_URL = "https://careconnect-hospital-portal.onrender.com/api";
+
 
 class ApiService {
   constructor() {
