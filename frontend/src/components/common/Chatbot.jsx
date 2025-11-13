@@ -1,7 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import stringSimilarity from "string-similarity";
 
-// Synonym helper (smart matching)
+// --------------------------------------------------------
+// 1. SYMPTOM SYNONYMS (smart fuzzy matching support)
+// --------------------------------------------------------
 const symptomSynonyms = {
   "pain": ["ache", "hurting", "hurt", "sore", "paining"],
   "breathing difficulty": ["hard to breathe", "can't breathe", "trouble breathing", "difficulty breathing", "breath problem"],
@@ -11,7 +13,9 @@ const symptomSynonyms = {
   "fatigue": ["tired", "weakness", "exhausted", "low energy"]
 };
 
-// FINAL COMPLETE, CLEAN, NON-DUPLICATE SYMPTOM MAP
+// --------------------------------------------------------
+// 2. SYMPTOM → DOCTOR MAPPING (FULL LIST)
+// --------------------------------------------------------
 const symptomMap = {
   "fever": "You can visit a General Physician",
   "high temperature": "You can visit a General Physician",
@@ -126,18 +130,66 @@ const symptomMap = {
   "nutrition advice": "You can visit a Dietitian"
 };
 
+// --------------------------------------------------------
+// 3. CHATBOT LOGIC (greetings, navigation, symptoms, fallback)
+// --------------------------------------------------------
 const fixedResponses = (text) => {
   const t = (text || '').toLowerCase().trim();
   if (!t) return "Please type something so I can help.";
 
-  // Normal chatbot quick replies remain unchanged...
+  // SMART GREETINGS
+  const greetingKeywords = [
+    "hi", "hello", "hey", "hii", "hiii", "helloo",
+    "hey there", "hello there",
+    "good morning", "good evening", "good afternoon"
+  ];
+  if (greetingKeywords.some(g => t.includes(g))) {
+    return "Hi — how may I help you?";
+  }
 
-  // SMART SYMPTOM MATCHING START
+  // SMALL TALK
+  if (t.includes("how are you")) return "I'm doing great 😊 How may I assist you today?";
+  if (t.includes("your name")) return "I'm the CareConnect Assistant 🤖";
+  if (t.includes("who are you") || t.includes("what are you"))
+    return "I'm CareConnect Assistant — your virtual helper!";
+  if (t.includes("thank")) return "You're welcome! 😊";
+  if (t.includes("bye")) return "Goodbye! Take care 💙";
+
+  // WEBSITE NAVIGATION HELP
+  if (t.includes("book appointment") || t.includes("appointment page"))
+    return "To book an appointment, go to the “Book Appointment” tab in the top menu.";
+
+  if (t.includes("my appointments") || t.includes("past appointments"))
+    return "You can view your upcoming and past appointments in the “My Appointments” tab.";
+
+  if (t.includes("doctors") || t.includes("all doctors"))
+    return "Click on the “All Doctors” tab to see all available doctors.";
+
+  if (t.includes("lab report") || t.includes("reports"))
+    return "Your lab reports are available in the 'Lab Reports' tab.";
+
+  if (t.includes("prescription") || t.includes("medicine"))
+    return "Your prescriptions can be found in the 'Prescriptions' tab.";
+
+  // HELP MENU
+  if (t.includes("help") || t.includes("what can you do") || t.includes("features")) {
+    return (
+      "I can help you with:\n" +
+      "• Understanding symptoms\n" +
+      "• Suggesting which doctor to visit\n" +
+      "• Navigating the website\n" +
+      "• Booking appointments\n" +
+      "• Viewing prescriptions & lab reports\n" +
+      "Just tell me what you need!"
+    );
+  }
+
+  // SMART SYMPTOM MATCHING
   const clean = t.replace(/[^\w\s]/gi, "");
   const words = clean.split(/\s+/);
   const keys = Object.keys(symptomMap);
 
-  // 1) Word-order-free matching
+  // 1) Exact match ignoring order
   for (let key of keys) {
     const parts = key.split(" ");
     if (parts.every(p => words.includes(p))) return symptomMap[key];
@@ -149,7 +201,7 @@ const fixedResponses = (text) => {
     if (best.rating >= 0.65) return symptomMap[best.target];
   }
 
-  // 3) Synonym expansion
+  // 3) Synonym matching
   for (let base in symptomSynonyms) {
     if (words.some(w => symptomSynonyms[base].includes(w))) {
       const related = keys.find(k => k.includes(base));
@@ -157,9 +209,13 @@ const fixedResponses = (text) => {
     }
   }
 
-  return "Sorry, I don't understand that yet. You can ask me about symptoms, booking appointments, lab reports, or prescriptions.";
+  // FALLBACK
+  return "Sorry, I didn't fully understand. You can ask about symptoms, doctors, appointments, lab reports, or prescriptions.";
 };
 
+// --------------------------------------------------------
+// 4. CHATBOT UI COMPONENT
+// --------------------------------------------------------
 export function Chatbot() {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
@@ -175,17 +231,21 @@ export function Chatbot() {
   }, [messages, open]);
 
   const send = (text) => {
-    const trimmed = (text || '').trim();
+    const trimmed = text.trim();
     if (!trimmed) return;
+
     setMessages((m) => [...m, { from: 'user', text: trimmed }]);
     setInput('');
+
     const reply = fixedResponses(trimmed);
-    setTimeout(() => setMessages((m) => [...m, { from: 'bot', text: reply }]), 400);
+    setTimeout(() => {
+      setMessages((m) => [...m, { from: 'bot', text: reply }]);
+    }, 400);
   };
 
   return (
     <div className="chatbot">
-      <button className="chatbot-button btn-float" onClick={() => setOpen((s) => !s)}>
+      <button className="chatbot-button btn-float" onClick={() => setOpen(s => !s)}>
         {open ? '✖' : '💬'}
       </button>
 
@@ -196,11 +256,20 @@ export function Chatbot() {
           </div>
 
           <div className="chatbot-messages" ref={messagesRef}>
-            {messages.map((m, i) => <div key={i} className={`chatbot-message ${m.from}`}>{m.text}</div>)}
+            {messages.map((m, i) => (
+              <div key={i} className={`chatbot-message ${m.from}`}>
+                {m.text}
+              </div>
+            ))}
           </div>
 
           <form className="chatbot-input" onSubmit={(e) => { e.preventDefault(); send(input); }}>
-            <input type="text" placeholder="Describe your problem..." value={input} onChange={(e) => setInput(e.target.value)} />
+            <input
+              type="text"
+              placeholder="Describe your problem..."
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+            />
             <button type="submit">Send</button>
           </form>
         </div>
