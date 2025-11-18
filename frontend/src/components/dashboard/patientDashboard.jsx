@@ -80,7 +80,7 @@ export const PatientDashboard = () => {
       doctorId: selectedDoctor,
       date: selectedDate,
       time: selectedTime,
-      reason,
+      reason: reason || undefined,
       status: "Scheduled"
     });
 
@@ -183,7 +183,7 @@ export const PatientDashboard = () => {
         await apiService.updateAppointment(appointment.id, {
           date,
           time,
-          reason
+          reason: reason || undefined
         });
         showMessage('success', 'Appointment updated successfully');
         closeModal();
@@ -277,7 +277,7 @@ export const PatientDashboard = () => {
         doctorId: selectedDoctor,
         date: selectedDate,
         time: selectedTime,
-        reason,
+        reason: reason || undefined,
         status: 'Scheduled',
       });
       showMessage('success', 'Appointment booked successfully!');
