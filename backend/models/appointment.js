@@ -1,5 +1,6 @@
 import pool from '../config/database.js';
 
+
 export class Appointment {
   static async create(appointmentData) {
     const { patientId, doctorId, date, time, status = 'Scheduled' } = appointmentData;

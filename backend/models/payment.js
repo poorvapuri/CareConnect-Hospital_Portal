@@ -1,87 +1,71 @@
 import pool from '../config/database.js';
 
 export class Payment {
-  static async create({ appointment_id, amount, payment_method, processed_by }) {
-    const query = `
-      INSERT INTO payments (
-        appointment_id,
-        amount,
-        payment_method,
-        payment_status,
-        payment_date,
-        processed_by
-      )
-      VALUES ($1, $2, $3, 'Paid', NOW(), $4)
-      RETURNING *
-    `;
 
-    const values = [appointment_id, amount, payment_method, processed_by];
-    const result = await pool.query(query, values);
-    return result.rows[0];
-  }
-
+  // Fetch payments with filters
   static async findAll(filters = {}) {
-    let query = `
-      SELECT p.*, a.patient_id, a.doctor_id, a.date, a.time,
-             u.name AS patient_name
-      FROM payments p
-      LEFT JOIN appointments a ON p.appointment_id = a.id
-      LEFT JOIN users u ON a.patient_id = u.id
-    `;
-
-    const conditions = [];
-    const values = [];
+    let query = `SELECT * FROM payments WHERE 1=1`;
+    const params = [];
     let index = 1;
 
-    if (filters.date) {
-      conditions.push(`DATE(p.payment_date) = $${index++}`);
-      values.push(filters.date);
+    if (filters.appointmentId) {
+      query += ` AND appointment_id = $${index++}`;
+      params.push(filters.appointmentId);
     }
 
-    if (filters.payment_status) {
-      conditions.push(`p.payment_status = $${index++}`);
-      values.push(filters.payment_status);
+    if (filters.patientId) {
+      query += ` AND patient_id = $${index++}`;
+      params.push(filters.patientId);
     }
 
-    if (conditions.length > 0) {
-      query += ` WHERE ${conditions.join(' AND ')}`;
+    if (filters.status) {
+      query += ` AND status = $${index++}`;
+      params.push(filters.status);
     }
 
-    query += ` ORDER BY p.payment_date DESC`;
-
-    const result = await pool.query(query, values);
+    const result = await pool.query(query, params);
     return result.rows;
   }
 
-  static async markPaid(appointment_id, { amount, method, processed_by }) {
-    const query = `
-      INSERT INTO payments (
-        appointment_id,
-        amount,
-        payment_method,
-        payment_status,
-        payment_date,
-        processed_by
-      )
-      VALUES ($1, $2, $3, 'Paid', NOW(), $4)
-      RETURNING *
-    `;
 
-    const result = await pool.query(query, [
-      appointment_id,
-      amount,
-      method,
-      processed_by
-    ]);
+  // ⭐ FIXED: MARK APPOINTMENT AS PAID (Backend logic)
+  static async markPaid(appointmentId, { amount, method, processed_by }) {
 
-    // Also update appointment table
-    await pool.query(
-      `UPDATE appointments 
-       SET payment_status='Paid', payment_amount=$1 
-       WHERE id=$2`,
-      [amount, appointment_id]
+    // 1️⃣ Validate appointment exists
+    const aptRes = await pool.query(
+      `SELECT * FROM appointments WHERE id = $1`,
+      [appointmentId]
     );
 
-    return result.rows[0];
+    if (aptRes.rows.length === 0) {
+      throw new Error("Appointment not found");
+    }
+
+    const appointment = aptRes.rows[0];
+
+    // 2️⃣ Update appointment table → payment_status = 'Paid'
+    await pool.query(
+      `UPDATE appointments 
+       SET payment_status = 'Paid' 
+       WHERE id = $1`,
+      [appointmentId]
+    );
+
+    // 3️⃣ Insert into payments table
+    const payRes = await pool.query(
+      `INSERT INTO payments (appointment_id, patient_id, amount, method, status, processed_by)
+       VALUES ($1, $2, $3, $4, 'Paid', $5)
+       RETURNING *`,
+      [
+        appointmentId,
+        appointment.patient_id,
+        amount || 0,
+        method || 'Cash',
+        processed_by
+      ]
+    );
+
+    return payRes.rows[0];
   }
+
 }

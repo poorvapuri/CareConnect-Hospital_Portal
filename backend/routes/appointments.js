@@ -207,6 +207,8 @@ router.put('/:id', authenticateToken, async (req, res) => {
 });
 
 
+
+
 // ✅ Cancel appointment
 router.delete('/:id', authenticateToken, async (req, res) => {
   try {

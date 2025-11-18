@@ -60,23 +60,38 @@ export const PatientDashboard = () => {
       }
     };
 
-    const handleBooking = async () => {
-      try {
-        await apiService.createAppointment({
-          patientId: currentUser.id,
-          doctorId: selectedDoctor,
-          date: selectedDate,
-          time: selectedTime,
-          reason: reason,
-          status: 'Scheduled'
-        });
-        showMessage('success', 'Appointment booked successfully!');
-        triggerRefresh();
-        setView('my-appointments');
-      } catch (error) {
-        showMessage('error', 'Failed to book appointment');
-      }
-    };
+   const handleBooking = async () => {
+  try {
+    // Check if this doctor already has a booked appointment at same date/time
+    const isTaken = appointments.some(a => 
+      a.doctor_id == selectedDoctor &&
+      a.date === selectedDate &&
+      a.time === selectedTime &&
+      a.status !== "Cancelled"
+    );
+
+    if (isTaken) {
+      showMessage("error", "This time slot is already booked for this doctor.");
+      return;
+    }
+
+    await apiService.createAppointment({
+      patientId: currentUser.id,
+      doctorId: selectedDoctor,
+      date: selectedDate,
+      time: selectedTime,
+      reason,
+      status: "Scheduled"
+    });
+
+    showMessage("success", "Appointment booked successfully!");
+    triggerRefresh();
+    setView("my-appointments");
+  } catch (err) {
+    showMessage("error", "Failed to book appointment.");
+  }
+};
+
 
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
