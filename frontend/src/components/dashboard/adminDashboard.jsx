@@ -544,20 +544,6 @@ export const AdminDashboard = () => {
                       {dateDisplay}{timeDisplay ? ` • ${timeDisplay}` : ''}
                     </div>
                   </div>
-
-                  <div style={{ textAlign: 'right', minWidth: 120 }}>
-                    <div style={{
-                      display: 'inline-block',
-                      padding: '8px 12px',
-                      borderRadius: 8,
-                      background: '#fff',
-                      boxShadow: '0 4px 10px rgba(0,0,0,0.04)',
-                      fontSize: 13,
-                      color: '#333'
-                    }}>
-                      {apt.status || apt.paymentStatus || 'N/A'}
-                    </div>
-                  </div>
                 </div>
               );
             })}

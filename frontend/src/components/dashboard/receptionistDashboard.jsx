@@ -18,22 +18,48 @@ export const ReceptionistDashboard = () => {
   }, [refresh, selectedDate]);
 
   const fetchAllData = async () => {
-    try {
-      setLoading(true);
-      const [doctorsRes, appointmentsRes] = await Promise.all([
-        apiService.getDoctors(),
-        apiService.getAppointments({ date: selectedDate })
-      ]);
+  try {
+    setLoading(true);
 
-      setDoctors(Array.isArray(doctorsRes) ? doctorsRes : (doctorsRes?.data || doctorsRes?.doctors || []));
-      setAppointments(Array.isArray(appointmentsRes) ? appointmentsRes : (appointmentsRes?.data || appointmentsRes?.appointments || []));
-    } catch (error) {
-      console.error('Error fetching data:', error);
-      showMessage && showMessage('error', 'Failed to fetch receptionist data');
-    } finally {
-      setLoading(false);
+    // ✅ Use endpoints the receptionist has access to
+    const [doctorsRes, appointmentsRes] = await Promise.all([
+      apiService.getDoctors(), // receptionist can access this
+      apiService.getAppointments({ date: selectedDate })
+    ]);
+
+    // ✅ Normalize doctor data (handle different backend response shapes)
+    let doctorList = [];
+    if (Array.isArray(doctorsRes)) {
+      doctorList = doctorsRes;
+    } else if (doctorsRes?.data) {
+      doctorList = doctorsRes.data;
+    } else if (doctorsRes?.doctors) {
+      doctorList = doctorsRes.doctors;
+    } else if (doctorsRes?.results) {
+      doctorList = doctorsRes.results;
     }
-  };
+
+    // ✅ Normalize appointments data
+    let appointmentList = [];
+    if (Array.isArray(appointmentsRes)) {
+      appointmentList = appointmentsRes;
+    } else if (appointmentsRes?.data) {
+      appointmentList = appointmentsRes.data;
+    } else if (appointmentsRes?.appointments) {
+      appointmentList = appointmentsRes.appointments;
+    }
+
+    // ✅ Set states
+    setDoctors(doctorList);
+    setAppointments(appointmentList);
+  } catch (error) {
+    console.error('❌ Error fetching data:', error);
+    showMessage && showMessage('error', 'Failed to fetch receptionist data');
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   // -------------------------
   // Helper formatting funcs (copied from Admin style)
@@ -245,20 +271,6 @@ export const ReceptionistDashboard = () => {
                         {dateDisplay}{timeDisplay ? ` • ${timeDisplay}` : ''}
                       </div>
                     </div>
-
-                    <div style={{ textAlign: 'right', minWidth: 120 }}>
-                      <div style={{
-                        display: 'inline-block',
-                        padding: '8px 12px',
-                        borderRadius: 8,
-                        background: '#fff',
-                        boxShadow: '0 4px 10px rgba(0,0,0,0.04)',
-                        fontSize: 13,
-                        color: '#333'
-                      }}>
-                        {apt.status || apt.paymentStatus || 'N/A'}
-                      </div>
-                    </div>
                   </div>
                 );
               })}
@@ -367,42 +379,95 @@ export const ReceptionistDashboard = () => {
                   const doctorDisplay = cleanDoctorName(appointment.doctor_name || (appointment.doctor && (appointment.doctor.name || appointment.doctor.fullName)) || '');
 
                   return (
-                    <div key={id} style={{
-                      borderRadius: 10,
-                      padding: 14,
-                      background: '#fbfbfb',
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      boxShadow: '0 3px 8px rgba(0,0,0,0.02)'
-                    }}>
-                      <div style={{ maxWidth: '72%' }}>
-                        <div style={{ fontWeight: 700, fontSize: 15 }}>{appointment.patient_name || (appointment.patient && appointment.patient.name) || 'Unknown'}</div>
-                        <div style={{ color: '#555', marginTop: 6 }}>{doctorDisplay || 'Doctor'}</div>
-                        <div style={{ color: '#777', marginTop: 6 }}>{dateDisplay}{timeDisplay ? ` • ${timeDisplay}` : ''}</div>
-                      </div>
+  <div
+    key={id}
+    style={{
+      borderRadius: 10,
+      padding: 14,
+      background: '#fbfbfb',
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      boxShadow: '0 3px 8px rgba(0,0,0,0.02)'
+    }}
+  >
+    <div style={{ maxWidth: '72%' }}>
+      <div style={{ fontWeight: 700, fontSize: 15 }}>
+        {appointment.patient_name ||
+          (appointment.patient && appointment.patient.name) ||
+          'Unknown'}
+      </div>
+      <div style={{ color: '#555', marginTop: 6 }}>
+        {doctorDisplay || 'Doctor'}
+      </div>
+      <div style={{ color: '#777', marginTop: 6 }}>
+        {dateDisplay}
+        {timeDisplay ? ` • ${timeDisplay}` : ''}
+      </div>
+    </div>
 
-                      <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                        <div style={{ textAlign: 'right' }}>
-                          <p style={{ margin: 0, fontWeight: 700 }}>${appointment.payment_amount || 50}</p>
-                          <div style={{ marginTop: 6 }}>
-                            <span style={{ display: 'inline-block', padding: '6px 10px', borderRadius: 8, background: '#fff', boxShadow: '0 4px 10px rgba(0,0,0,0.04)' }}>
-                              {appointment.payment_status || 'Pending'}
-                            </span>
-                          </div>
-                        </div>
+    {/* ✅ Payment & Action buttons aligned horizontally */}
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+        justifyContent: 'flex-end',
+        minWidth: 180
+      }}
+    >
+      <p style={{ margin: 0, fontWeight: 700, fontSize: 16 }}>
+        ₹{appointment.payment_amount || 500}
+      </p>
 
-                        <button
-                          onClick={() => markAsPaid(appointment)}
-                          className="btn-primary btn-small"
-                          disabled={processingIds.includes(id)}
-                          style={{ padding: '8px 12px', borderRadius: 8 }}
-                        >
-                          {processingIds.includes(id) ? 'Processing...' : 'Mark as Paid'}
-                        </button>
-                      </div>
-                    </div>
-                  );
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <span
+          style={{
+            display: 'inline-block',
+            padding: '6px 10px',
+            borderRadius: 8,
+            background: appointment.payment_status === 'Paid'
+              ? '#e6f8f2'
+              : '#fff7e6',
+            color:
+              appointment.payment_status === 'Paid'
+                ? '#137333'
+                : '#b36b00',
+            fontSize: 12,
+            fontWeight: 600,
+            boxShadow: '0 2px 6px rgba(0,0,0,0.04)'
+          }}
+        >
+          {appointment.payment_status || 'Pending'}
+        </span>
+
+        {appointment.payment_status !== 'Paid' && (
+          <button
+            onClick={() => markAsPaid(appointment)}
+            disabled={processingIds.includes(id)}
+            style={{
+              padding: '6px 10px',
+              borderRadius: 8,
+              backgroundColor: '#66bd60ff',
+              color: 'white',
+              fontSize: 12,
+              fontWeight: 600,
+              border: 'none',
+              cursor: 'pointer',
+              boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
+              opacity: processingIds.includes(id) ? 0.7 : 1
+            }}
+          >
+            {processingIds.includes(id)
+              ? 'Processing...'
+              : 'Mark as Paid'}
+          </button>
+        )}
+      </div>
+    </div>
+  </div>
+);
+
                 })
               }
             </div>
@@ -435,9 +500,9 @@ export const ReceptionistDashboard = () => {
                       </div>
 
                       <div style={{ textAlign: 'right', minWidth: 120 }}>
-                        <div style={{ padding: '8px 12px', borderRadius: 8, background: '#fff', boxShadow: '0 4px 10px rgba(0,0,0,0.04)', fontSize: 13, color: '#333' }}>
+                        {/* <div style={{ padding: '8px 12px', borderRadius: 8, background: '#fff', boxShadow: '0 4px 10px rgba(0,0,0,0.04)', fontSize: 13, color: '#333' }}>
                           Paid
-                        </div>
+                        </div> */}
                       </div>
                     </div>
                   );
