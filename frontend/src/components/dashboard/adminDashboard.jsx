@@ -392,7 +392,12 @@ export const AdminDashboard = () => {
   // Main Dashboard (centered)
   const MainDashboard = () => {
     const todayStr = new Date().toISOString().split('T')[0];
-    const todaysAppointmentsCount = appointments.filter(a => (a.date === todayStr) || (a.appointmentDate === todayStr)).length;
+    const todaysAppointmentsCount = appointments.filter(a => {
+  const apptDate = new Date(a.date || a.appointmentDate)
+    .toISOString()
+    .split('T')[0]; // extract yyyy-mm-dd
+  return apptDate === todayStr;
+}).length;
 
     return (
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>

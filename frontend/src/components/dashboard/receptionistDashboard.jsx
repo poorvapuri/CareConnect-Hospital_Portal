@@ -584,7 +584,12 @@ export const ReceptionistDashboard = () => {
   // -------------------------
   // Main Dashboard (default) — Admin style
   // -------------------------
-  const todaysAppointmentsCount = appointments.filter(a => (a.date === selectedDate) || (a.appointmentDate === selectedDate)).length;
+ const todaysAppointmentsCount = appointments.filter(a => {
+  const apptDate = new Date(a.date || a.appointmentDate)
+    .toISOString()
+    .split('T')[0];
+  return apptDate === selectedDate;
+}).length;
 
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto' }}>
@@ -614,7 +619,7 @@ export const ReceptionistDashboard = () => {
             margin: 12
           }}>
             <div style={{ fontSize: 13, letterSpacing: 1.1, opacity: 0.95 }}>ALL DOCTORS</div>
-            <div style={{ fontSize: 36, fontWeight: 700, marginTop: 8 }}>{doctors.filter(d => d.available).length}</div>
+            <div style={{ fontSize: 36, fontWeight: 700, marginTop: 8 }}>{doctors.length}</div>
           </div>
 
           <div style={{
