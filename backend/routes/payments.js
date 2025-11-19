@@ -4,7 +4,7 @@ import { Payment } from '../models/payment.js';
 
 const router = express.Router();
 
-// GET /api/payments (with filters)
+// GET /api/payments
 router.get('/', authenticateToken, authorizeRoles('Receptionist'), async (req, res) => {
   try {
     const payments = await Payment.findAll(req.query);
@@ -14,7 +14,7 @@ router.get('/', authenticateToken, authorizeRoles('Receptionist'), async (req, r
   }
 });
 
-// POST /api/payments/appointment/:id  → mark appointment as paid
+// POST /api/payments/appointment/:id
 router.post('/appointment/:id', authenticateToken, authorizeRoles('Receptionist'), async (req, res) => {
   try {
     const { amount, method } = req.body;
