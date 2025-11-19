@@ -26,26 +26,35 @@ export const PatientDashboard = () => {
   }, [refresh, view]);
 
   const fetchAllData = async () => {
-    try {
-      setLoading(true);
-      const [appointmentsRes, doctorsRes, labReportsRes, prescriptionsRes] =
-        await Promise.all([
-          apiService.getAppointments({ patientId: currentUser.id }),
-          apiService.getDoctors(),
-          apiService.getLabTests({ patientId: currentUser.id }),
-          apiService.getPrescriptions({ patientId: currentUser.id }),
-        ]);
+  try {
+    setLoading(true);
 
-      setAppointments(appointmentsRes || []);
-      setDoctors(doctorsRes || []);
-      setLabReports(labReportsRes || []);
-      setPrescriptions(prescriptionsRes || []);
-    } catch (error) {
-      console.error("Error fetching data:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    const [appointmentsRes, doctorsRes, labReportsRes, prescriptionsRes] =
+      await Promise.all([
+        apiService.getAppointments({ patientId: currentUser.id }),
+        apiService.getDoctors(),
+        apiService.getLabTests({ patientId: currentUser.id }),
+        apiService.getPrescriptions({ patientId: currentUser.id }),
+      ]);
+
+    setAppointments(appointmentsRes || []);
+
+    // ✅ FIX: handle both array and object response formats for doctors
+    setDoctors(
+      Array.isArray(doctorsRes)
+        ? doctorsRes
+        : doctorsRes?.doctors || doctorsRes?.data || []
+    );
+
+    setLabReports(labReportsRes || []);
+    setPrescriptions(prescriptionsRes || []);
+  } catch (error) {
+    console.error("Error fetching data:", error);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   // CREATE Appointment
   const BookAppointment = () => {
@@ -88,7 +97,7 @@ export const PatientDashboard = () => {
           doctorId: selectedDoctor,
           date: selectedDate,
           time: selectedTime,
-          reason: reason,
+          reason: reason || undefined,
           status: "Scheduled",
         });
         showMessage("success", "Appointment booked successfully!");
@@ -199,11 +208,7 @@ export const PatientDashboard = () => {
         await apiService.updateAppointment(appointment.id, {
           date,
           time,
-
-          reason,
-
           reason: reason || undefined
-
         });
         showMessage("success", "Appointment updated successfully");
         closeModal();
