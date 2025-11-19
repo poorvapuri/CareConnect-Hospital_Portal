@@ -930,12 +930,16 @@ export const DoctorDashboard = () => {
 
     // ✅ FIXED: Correctly create lab test in DB
     if (prescription.requiresLabTest && prescription.labTestName) {
-      await apiService.createLabTest({
-        patientId: appointment.patient_id,
-        testName: prescription.labTestName,
-        date: new Date().toISOString().split('T')[0],
-        notes: prescription.labTestInstructions
-      });
+     await apiService.createLabTest({
+  patientId: appointment.patient_id,
+  doctorId: currentUser.id,   // ⭐ CRITICAL
+  testName: prescription.labTestName,
+  date: new Date().toISOString().split('T')[0],
+  notes: prescription.labTestInstructions
+});
+
+
+
       showMessage('info', 'Lab test added successfully');
     }
 

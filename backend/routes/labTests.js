@@ -7,31 +7,61 @@ const router = express.Router();
 
 // ✅ Create new lab test (by doctor)
 router.post('/', authenticateToken, async (req, res) => {
+  console.log("🔥 ROUTE HIT: POST /lab-tests");
+  console.log("➡ req.user:", req.user);
+  console.log("➡ body received:", req.body);
   try {
-    const { patientId, testName, date, notes, suggestedAmount } = req.body;
-
-    const labTest = await LabTest.create({
+    const {
       patientId,
       testName,
       date,
       notes,
+      paymentStatus,
+      suggestedAmount
+    } = req.body;
+
+    // ⭐ ADD THIS
+    const doctorId = req.user.id; // doctor who is logged in
+
+    const labTest = await LabTest.create({
+      patientId,
+      doctorId,   // ⭐ include it
+      testName,
+      date,
+      notes,
+      paymentStatus,
       suggestedAmount
     });
 
-    res.status(201).json(labTest);
+    res.json(labTest);
   } catch (error) {
-    console.error('Error creating lab test:', error);
     res.status(500).json({ error: error.message });
   }
 });
+
 
 // ✅ Fetch lab tests (doctor, patient, or technician)
 router.get('/', authenticateToken, async (req, res) => {
   try {
     const filters = {};
 
+    // Patient can only see their own tests
     if (req.user.role === 'Patient') {
       filters.patientId = req.user.id;
+    }
+
+    // Doctor sees tests ordered BY THEM
+    if (req.user.role === 'Doctor') {
+      filters.doctorId = req.user.id;
+    }
+
+    // Admin/receptionist can filter manually
+    if (req.query.patientId) {
+      filters.patientId = req.query.patientId;
+    }
+
+    if (req.query.doctorId) {
+      filters.doctorId = req.query.doctorId;
     }
 
     if (req.query.paymentStatus) {
@@ -40,11 +70,13 @@ router.get('/', authenticateToken, async (req, res) => {
 
     const labTests = await LabTest.findAll(filters);
     res.json(labTests);
+
   } catch (error) {
     console.error('Error fetching lab tests:', error);
     res.status(500).json({ error: error.message });
   }
 });
+
 
 // ✅ Update payment status
 router.patch('/:id/payment', authenticateToken, async (req, res) => {
@@ -112,6 +144,7 @@ router.get('/payment-status/:status', authenticateToken, authorizeRoles('Lab Tec
     const { status } = req.params;
     const labTests = await LabTest.findAll({
       paymentStatus: status
+      
     });
     res.json(labTests);
   } catch (error) {
