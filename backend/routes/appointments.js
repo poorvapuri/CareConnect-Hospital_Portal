@@ -7,20 +7,24 @@ const router = express.Router();
 
 router.post('/', authenticateToken, async (req, res) => {
   try {
-    const { patientId, doctorId, date, time } = req.body;
-    
+    const { patientId, doctorId, date, time, reason } = req.body;
+
     const appointment = await Appointment.create({
       patientId,
       doctorId,
       date,
-      time
+      time,
+      reason,           // pass reason through
+      status: 'Scheduled'
     });
-    
+
     res.status(201).json(appointment);
   } catch (error) {
+    console.error('Error creating appointment:', error);
     res.status(500).json({ error: error.message });
   }
 });
+
 
 router.get('/', authenticateToken, async (req, res) => {
   try {
@@ -179,32 +183,41 @@ router.post('/walk-in', authenticateToken, authorizeRoles('Receptionist'), async
 router.put('/:id', authenticateToken, async (req, res) => {
   try {
     const { date, time, reason } = req.body;
-    const appointment = await Appointment.findById(req.params.id);
 
+    const appointment = await Appointment.findById(req.params.id);
     if (!appointment) {
       return res.status(404).json({ error: 'Appointment not found' });
     }
 
-    // ✅ Authorization check (corrected)
+    // Authorization check for patients
     if (req.user.role === 'Patient') {
       const patientFromDB = String(appointment.patient_id);
       const loggedInPatient = String(req.user.id);
-
       if (patientFromDB !== loggedInPatient) {
-        console.log(`🚫 Unauthorized update: patient ${loggedInPatient} tried to update ${patientFromDB}`);
         return res.status(403).json({ error: 'Unauthorized to update this appointment' });
       }
     }
 
-    // ✅ Update the appointment
-    const updated = await Appointment.update(req.params.id, { date, time, reason });
-    console.log(`✅ Appointment ${req.params.id} updated successfully by Patient ${req.user.id}`);
+    // Use safe updateById to avoid updating unknown columns
+    const updates = { date, time };
+    if (typeof reason !== 'undefined') updates.reason = reason;
+
+    const updated = await Appointment.updateById(req.params.id, updates);
+
+    // Optionally mark as 'Rescheduled'
+    if (updated) {
+      await Appointment.updateStatus(req.params.id, 'Rescheduled');
+    }
+
     res.json({ message: 'Appointment updated successfully', appointment: updated });
   } catch (error) {
-    console.error('❌ Error updating appointment:', error);
+    console.error('Error updating appointment:', error);
     res.status(500).json({ error: error.message });
   }
 });
+
+
+
 
 
 // ✅ Cancel appointment

@@ -14,6 +14,8 @@ export const AppointmentBooking = () => {
   ]);
   const [bookedSlots, setBookedSlots] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [reason, setReason] = useState('');
+
 
   useEffect(() => {
     fetchDoctors();
@@ -59,7 +61,9 @@ export const AppointmentBooking = () => {
         patientId: currentUser.id,
         doctorId: selectedDoctor,
         date: selectedDate,
-        time: selectedTime
+        time: selectedTime,
+        reason: reason || undefined
+
       });
       
       showMessage('success', 'Appointment booked successfully!');
@@ -75,9 +79,10 @@ export const AppointmentBooking = () => {
   };
 
   // Get tomorrow's date as minimum
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const minDate = tomorrow.toISOString().split('T')[0];
+ // Allow booking from today onward
+const today = new Date();
+today.setHours(0,0,0,0);
+const minDate = today.toISOString().split("T")[0];
 
   return (
     <div className="section">

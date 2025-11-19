@@ -80,6 +80,7 @@ export const PatientDashboard = () => {
       }
     };
 
+
     const handleBooking = async () => {
       try {
         await apiService.createAppointment({
@@ -97,6 +98,9 @@ export const PatientDashboard = () => {
         showMessage("error", "Failed to book appointment");
       }
     };
+
+    
+
 
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
@@ -195,7 +199,11 @@ export const PatientDashboard = () => {
         await apiService.updateAppointment(appointment.id, {
           date,
           time,
+
           reason,
+
+          reason: reason || undefined
+
         });
         showMessage("success", "Appointment updated successfully");
         closeModal();
@@ -572,16 +580,7 @@ export const PatientDashboard = () => {
                       <p>⏰ {apt.time}</p>
                       <p>📝 {apt.reason || "General Consultation"}</p>
                     </div>
-                    <div className="appointment-actions">
-                      <button className="btn btn-primary btn-small">
-                        View Details
-                      </button>
-                      <button
-                        onClick={() => setView("prescriptions")}
-                        className="btn btn-secondary btn-small"
-                      >
-                        View Prescription
-                      </button>
+                    <div className="appointment-actions">              
                     </div>
                   </div>
                 ))}
