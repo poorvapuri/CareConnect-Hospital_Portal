@@ -520,15 +520,7 @@ export const PatientDashboard = () => {
                       <p>📝 {apt.reason || 'General Consultation'}</p>
                     </div>
                     <div className="appointment-actions">
-                      <button className="btn btn-primary btn-small">
-                        View Details
-                      </button>
-                      <button
-                        onClick={() => setView('prescriptions')}
-                        className="btn btn-secondary btn-small"
-                      >
-                        View Prescription
-                      </button>
+                     
                     </div>
                   </div>
                 ))}
