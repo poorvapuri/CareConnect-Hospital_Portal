@@ -5,11 +5,7 @@ import pool from '../config/database.js';
 
 const router = express.Router();
 
-/**
- * GET /api/payments
- * Fetch all payments (optionally filtered)
- * Accessible by Receptionist role
- */
+// GET /api/payments
 router.get('/', authenticateToken, authorizeRoles('Receptionist'), async (req, res) => {
   try {
     const payments = await Payment.findAll(req.query);
@@ -20,11 +16,7 @@ router.get('/', authenticateToken, authorizeRoles('Receptionist'), async (req, r
   }
 });
 
-/**
- * POST /api/payments/appointment/:id
- * Mark an appointment as paid and record a payment entry
- * Accessible by Receptionist role
- */
+// POST /api/payments/appointment/:id
 router.post('/appointment/:id', authenticateToken, authorizeRoles('Receptionist'), async (req, res) => {
   const { id } = req.params;
   const { amount = 0, method = 'Cash' } = req.body;
