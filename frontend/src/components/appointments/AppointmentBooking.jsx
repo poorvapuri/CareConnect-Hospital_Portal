@@ -81,8 +81,8 @@ export const AppointmentBooking = () => {
   // Get tomorrow's date as minimum
  // Allow booking from today onward
 const today = new Date();
-today.setHours(0,0,0,0);
-const minDate = today.toISOString().split("T")[0];
+const minDate = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,"0")}-${String(today.getDate()).padStart(2,"0")}`;
+
 
   return (
     <div className="section">
@@ -117,20 +117,37 @@ const minDate = today.toISOString().split("T")[0];
           <div className="form-group">
             <label>Available Time Slots</label>
             <div className="time-slots">
-              {availableSlots.map(slot => {
-                const isBooked = bookedSlots.includes(slot);
-                return (
-                  <button
-                    key={slot}
-                    className={`time-slot ${selectedTime === slot ? 'selected' : ''} ${isBooked ? 'disabled' : ''}`}
-                    onClick={() => !isBooked && setSelectedTime(slot)}
-                    disabled={isBooked || loading}
-                  >
-                    {slot}
-                    {isBooked && <span className="booked-label">Booked</span>}
-                  </button>
-                );
-              })}
+              {availableSlots
+  .filter(slot => {
+    const today = new Date();
+    const todayStr = today.toISOString().split("T")[0];
+
+    // ❌ Hide booked slots
+    if (bookedSlots.includes(slot)) return false;
+
+    // ❌ Hide past slots for TODAY
+    if (selectedDate === todayStr) {
+      const [hh, mm] = slot.split(":");
+      const slotTime = new Date();
+      slotTime.setHours(Number(hh), Number(mm), 0, 0);
+
+      if (slotTime <= today) return false;
+    }
+
+    return true;
+  })
+  .map(slot => (
+    <button
+      key={slot}
+      className={`time-slot ${selectedTime === slot ? "selected" : ""}`}
+      onClick={() => setSelectedTime(slot)}
+      disabled={false}
+    >
+      {slot}
+    </button>
+  ))
+}
+
             </div>
           </div>
         )}

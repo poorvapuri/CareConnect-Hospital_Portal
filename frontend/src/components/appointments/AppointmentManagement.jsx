@@ -329,17 +329,37 @@ export const AppointmentManagement = () => {
               <div className="form-group">
                 <label>Available Time Slots*</label>
                 <div className="time-slots">
-                  {availableSlots.map(slot => (
-                    <button
-                      key={slot}
-                      type="button"
-                      className={`time-slot ${formData.time === slot ? 'selected' : ''}`}
-                      onClick={() => setFormData({ ...formData, time: slot })}
-                      disabled={loading}
-                    >
-                      {slot}
-                    </button>
-                  ))}
+                  {availableSlots
+  .filter(slot => {
+    const today = new Date();
+    const todayStr = today.toISOString().split("T")[0];
+
+    // ❌ Hide booked slots
+    if (bookedSlots.includes(slot)) return false;
+
+    // ❌ Hide past slots for TODAY
+    if (selectedDate === todayStr) {
+      const [hh, mm] = slot.split(":");
+      const slotTime = new Date();
+      slotTime.setHours(Number(hh), Number(mm), 0, 0);
+
+      if (slotTime <= today) return false;
+    }
+
+    return true;
+  })
+  .map(slot => (
+    <button
+      key={slot}
+      className={`time-slot ${selectedTime === slot ? "selected" : ""}`}
+      onClick={() => setSelectedTime(slot)}
+      disabled={false}
+    >
+      {slot}
+    </button>
+  ))
+}
+
                   {availableSlots.length === 0 && (
                     <p className="no-slots">No available slots for this date</p>
                   )}
