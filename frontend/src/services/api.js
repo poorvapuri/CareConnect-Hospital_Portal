@@ -118,12 +118,24 @@ async deleteAppointment(id) {
     return await this.request(`/prescriptions${params ? '?' + params : ''}`);
   }
 
-  async createPrescription(prescriptionData) {
-    return await this.request('/prescriptions', {
-      method: 'POST',
-      body: JSON.stringify(prescriptionData)
-    });
-  }
+  async createPrescription(p) {
+  return await this.request('/prescriptions', {
+    method: 'POST',
+    body: JSON.stringify({
+      patient_id: p.patientId,
+      appointment_id: p.appointmentId,
+      medication: p.medication,
+      dosage: p.dosage,
+      dosage_unit: p.dosage_unit,   // ⭐ NEW
+      duration: p.duration,         // ⭐ NEW
+      instructions: p.instructions,
+      lab_test_required: p.requiresLabTest || false,
+      lab_test_name: p.labTestName || null,
+      lab_test_instructions: p.labTestInstructions || null
+    })
+  });
+}
+
 
   async updatePrescription(id, updates) {
     return await this.request(`/prescriptions/${id}`, {

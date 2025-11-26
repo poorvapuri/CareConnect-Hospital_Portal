@@ -965,6 +965,226 @@ export const PatientDashboard = () => {
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("upcoming");
 
+
+  // ⭐ ADD THESE EXACTLY HERE (inside PatientDashboard function)
+const handleReschedule = async (appointmentId, newData) => {
+  try {
+    await apiService.updateAppointment(appointmentId, newData);
+    showMessage("success", "Appointment rescheduled successfully");
+    triggerRefresh();
+  } catch (err) {
+    console.error("Reschedule Error:", err);
+    showMessage("error", "Failed to reschedule appointment");
+  }
+};
+
+const handleDeleteAppointment = async (appointmentId) => {
+  try {
+    await apiService.deleteAppointment(appointmentId);
+    showMessage("success", "Appointment cancelled successfully");
+    triggerRefresh();
+  } catch (err) {
+    console.error("Delete Error:", err);
+    showMessage("error", "Failed to cancel appointment");
+  }
+};
+
+// ⭐ UPDATE APPOINTMENT MODAL COMPONENT
+// UpdateAppointment modal — replace your old UpdateAppointment with this
+const UpdateAppointment = ({ appointment }) => {
+  const doctorId =
+    appointment.doctor_id ||
+    appointment.doctorId ||
+    appointment.doctor?.id ||
+    appointment.doctor?.doctor_id ||
+    "";
+
+  const todayStr = new Date().toISOString().split("T")[0];
+  const FULL_DAY_SLOTS = ["09:00", "10:00", "11:00", "12:00", "14:00", "15:00", "16:00", "17:00"];
+
+  const [date, setDate] = useState(appointment.date || todayStr);
+  const [time, setTime] = useState(appointment.time ? appointment.time.slice(0,5) : "");
+  const [reason, setReason] = useState(appointment.reason || "");
+  const [availableSlots, setAvailableSlots] = useState([]);
+  const [bookedSlots, setBookedSlots] = useState([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+
+  const normalizeTime = (t) => {
+    if (!t) return "";
+    return t.length === 8 ? t.slice(0,5) : t.slice(0,5);
+  };
+
+  // fetch booked slots and available slots whenever date or doctorId changes
+  useEffect(() => {
+    if (!doctorId || !date) return;
+
+    let mounted = true;
+    const fetchSlots = async () => {
+      setLoadingSlots(true);
+
+      try {
+        // fetch booked (appointments) for that doctor + date
+        const appts = await apiService.getAppointments({
+          doctorId,
+          date
+        });
+        const booked = Array.isArray(appts) ? appts.map(a => normalizeTime(a.time)) : [];
+        if (!mounted) return;
+        setBookedSlots(booked);
+      } catch (err) {
+        if (!mounted) return;
+        setBookedSlots([]);
+        console.warn("Could not fetch booked slots", err);
+      }
+
+      try {
+        // fetch available slots from API (backend: getAvailableSlots)
+        const slots = await apiService.getAvailableSlots(doctorId, date);
+        // If backend returns empty array, fallback to FULL_DAY_SLOTS so UI still shows something.
+        const normalized = Array.isArray(slots) && slots.length > 0 ? slots.map(s => normalizeTime(s)) : FULL_DAY_SLOTS;
+        if (!mounted) return;
+        setAvailableSlots(normalized);
+      } catch (err) {
+        if (!mounted) return;
+        // fallback
+        setAvailableSlots(FULL_DAY_SLOTS);
+        console.warn("Could not fetch available slots", err);
+      } finally {
+        if (mounted) setLoadingSlots(false);
+      }
+    };
+
+    fetchSlots();
+    return () => { mounted = false; };
+  }, [doctorId, date]);
+
+  // compute slots to show: available minus booked, and remove past slots if date is today
+  const getFilteredSlots = () => {
+    const normalizedAvailable = availableSlots.map(s => normalizeTime(s)).filter(Boolean);
+    const dedup = [...new Set(normalizedAvailable)];
+    const free = dedup.filter(s => !bookedSlots.includes(s));
+
+    if (date !== todayStr) return free;
+
+    const now = new Date();
+    return free.filter(slot => {
+      const [h, m] = slot.split(":").map(Number);
+      const slotTime = new Date();
+      slotTime.setHours(h, m, 0, 0);
+      return slotTime > now;
+    });
+  };
+
+  const filteredSlots = getFilteredSlots();
+
+  const isSelected = (s) => normalizeTime(time) === normalizeTime(s);
+
+  const handleUpdate = async () => {
+    if (!date || !time) {
+      showMessage && showMessage("error", "Please choose date and time");
+      return;
+    }
+
+    // normalize before sending (HH:MM:SS)
+    const normalizedTimeForBackend = time.length === 8 ? time : `${time}:00`;
+
+    try {
+      await apiService.updateAppointment(appointment.id, {
+        date,
+        time: normalizedTimeForBackend,
+        reason: reason || undefined
+      });
+      showMessage && showMessage("success", "Appointment updated successfully");
+      closeModal && closeModal();
+      triggerRefresh && triggerRefresh();
+    } catch (err) {
+      console.error("Update Appointment error", err);
+      showMessage && showMessage("error", "Failed to update appointment");
+    }
+  };
+
+  // min date for date picker
+  const minDate = new Date().toISOString().split("T")[0];
+
+  return (
+    <div className="update-form" style={{ maxWidth: 520 }}>
+      <h3 style={{ marginTop: 0 }}>Reschedule Appointment</h3>
+
+      <div className="form-group">
+        <label>Date</label>
+        <input
+          type="date"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+          min={minDate}
+          className="styled-input"
+        />
+      </div>
+
+      <div className="form-group">
+        <label>Available Time Slots</label>
+        <div className="slot-grid" style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+          {loadingSlots && <div style={{ color: "#666" }}>Loading slots…</div>}
+
+          {!loadingSlots && filteredSlots.length === 0 && (
+            <div style={{ color: "#777" }}>No available slots for selected date</div>
+          )}
+
+          {!loadingSlots && filteredSlots.map((slot) => {
+            const disabled = bookedSlots.includes(slot);
+            return (
+              <button
+                key={slot}
+                type="button"
+                className={`slot-btn ${isSelected(slot) ? "selected" : ""} ${disabled ? "disabled-slot" : ""}`}
+                disabled={disabled}
+                onClick={() => {
+                  if (!disabled) setTime(slot);
+                }}
+                style={{
+                  padding: "8px 10px",
+                  borderRadius: 8,
+                  border: isSelected(slot) ? "2px solid #6d6af0" : "1px solid #e6e6e6",
+                  background: isSelected(slot) ? "#eef2ff" : "#fff",
+                  cursor: disabled ? "not-allowed" : "pointer"
+                }}
+              >
+                {slot}
+                {disabled ? " (Booked)" : ""}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="form-group">
+        <label>Reason</label>
+        <textarea
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          rows={3}
+          className="styled-textarea"
+        />
+      </div>
+
+      <div className="form-actions" style={{ display: "flex", gap: 8, marginTop: 12 }}>
+        <button onClick={handleUpdate} className="btn btn-primary">
+          Save Changes
+        </button>
+        <button onClick={() => closeModal && closeModal()} className="btn btn-secondary">
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+};
+
+
+
+
+
+
+
   useEffect(() => {
     fetchAllData();
   }, [refresh, view]);
