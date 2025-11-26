@@ -192,7 +192,7 @@ export const PatientHistory = ({ patientId }) => {
                   <div className="report-header">
                     <h4>{report.test_name}</h4>
                     <span className="report-date">
-                      {new Date(report.date).toLocaleDateString()}
+                      {new Date(report.date + "T00:00:00").toLocaleDateString()}
                     </span>
                   </div>
                   <div className="report-status">

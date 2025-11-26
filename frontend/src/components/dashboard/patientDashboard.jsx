@@ -1742,7 +1742,7 @@ const UpdateAppointment = ({ appointment }) => {
 
             <p>
               <strong>Test Date:</strong>{" "}
-              {new Date(report.date).toLocaleDateString()}
+              {new Date(report.date + "T00:00:00").toLocaleDateString()}
             </p>
 
             <p>

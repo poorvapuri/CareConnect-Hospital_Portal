@@ -255,7 +255,7 @@ export const DoctorDashboard = () => {
               {patientHistory.labReports.map(report => (
                 <div key={report.id} className="history-item">
                   <span>{report.test_name}</span>
-                  <span>{new Date(report.date).toLocaleDateString()}</span>
+                  <span>{new Date(report.date + "T00:00:00").toLocaleDateString()}</span>
                   {report.report_url && (
                     <a 
                       href={report.report_url}
@@ -298,42 +298,42 @@ export const DoctorDashboard = () => {
       labTestInstructions: existing?.lab_test_instructions || ''
     });
 
-    const handleSave = async () => {
+const handleSave = async () => {
   try {
     const data = {
-      patientId: appointment.patient_id,
-      appointmentId: appointment.id,
-      ...prescription
+      patient_id: appointment.patient_id,
+      doctor_id: currentUser.id,
+      medication: prescription.medication,
+      dosage: prescription.dosage,
+      duration: prescription.duration,
+      instructions: prescription.instructions,
+      date: new Date().toISOString().split("T")[0],
     };
 
     if (existing) {
       await apiService.updatePrescription(existing.id, data);
-      showMessage('success', 'Prescription updated');
+      showMessage("success", "Prescription updated");
     } else {
       await apiService.createPrescription(data);
-      showMessage('success', 'Prescription created');
+      showMessage("success", "Prescription created");
     }
 
-    // ✅ FIXED: Correctly create lab test in DB
     if (prescription.requiresLabTest && prescription.labTestName) {
-     await apiService.createLabTest({
-  patientId: appointment.patient_id,
-  doctorId: currentUser.id,   // ⭐ CRITICAL
-  testName: prescription.labTestName,
-  date: new Date().toISOString().split('T')[0],
-  notes: prescription.labTestInstructions
-});
-
-
-
-      showMessage('info', 'Lab test added successfully');
+      await apiService.createLabTest({
+        patientId: appointment.patient_id,
+        doctorId: currentUser.id,
+        testName: prescription.labTestName,
+        date: new Date().toISOString().split("T")[0],
+        notes: prescription.labTestInstructions || ""
+      });
+      showMessage("info", "Lab test created");
     }
 
     closeModal();
     triggerRefresh();
   } catch (error) {
-    console.error('Error saving prescription or lab test:', error);
-    showMessage('error', 'Failed to save prescription or lab test');
+    console.error("Prescription error:", error);
+    showMessage("error", "Failed to save prescription");
   }
 };
 
