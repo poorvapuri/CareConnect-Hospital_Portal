@@ -1139,7 +1139,7 @@ export const PatientDashboard = () => {
               <option value="">Choose a Doctor</option>
               {doctors.map((doc) => (
                 <option key={doc.id} value={doc.id}>
-                  Dr. {doc.name} — {doc.specialization || "General Medicine"}
+                   {doc.name} — {doc.specialization || "General Medicine"}
                 </option>
               ))}
             </select>
@@ -1345,7 +1345,7 @@ export const PatientDashboard = () => {
                 upcomingAppointments.map((apt) => (
                   <div key={apt.id} className="appointment-card glass-card">
                     <div className="appointment-header">
-                      <h3>🩺 Dr. {apt.doctor_name}</h3>
+                      <h3>🩺 {apt.doctor_name}</h3>
                       <span
                         className={`status-badge ${apt.status.toLowerCase()}`}
                       >
@@ -1398,7 +1398,7 @@ export const PatientDashboard = () => {
                 pastAppointments.map((apt) => (
                   <div key={apt.id} className="appointment-card glass-card past">
                     <div className="appointment-header">
-                      <h3>Dr. {apt.doctor_name}</h3>
+                      <h3> {apt.doctor_name}</h3>
                       <span className="status-badge completed">
                         {apt.status}
                       </span>
@@ -1419,7 +1419,7 @@ export const PatientDashboard = () => {
                     className="appointment-card glass-card cancelled"
                   >
                     <div className="appointment-header">
-                      <h3>Dr. {apt.doctor_name}</h3>
+                      <h3> {apt.doctor_name}</h3>
                       <span className="status-badge cancelled">Cancelled</span>
                     </div>
 
@@ -1460,7 +1460,7 @@ export const PatientDashboard = () => {
 
               <div className="prescription-body">
                 <p>
-                  <strong>👨‍⚕️ Prescribed by:</strong> Dr. {pres.doctor_name}
+                  <strong>👨‍⚕️ Prescribed by:</strong> {pres.doctor_name}
                 </p>
                 <p>
                   <strong>💉 Dosage:</strong> {pres.dosage}
@@ -1484,44 +1484,78 @@ export const PatientDashboard = () => {
       </div>
     );
   }
+  const resolveDoctorName = (report) => {
+  const doctorId =
+    report.doctor_id ||
+    report.doctorId ||
+    report.ordered_by ||
+    report.orderedById ||
+    null;
+
+  // Match doctor by ID
+  if (doctorId) {
+    const found = doctors.find(d => String(d.id) === String(doctorId));
+    if (found) return found.name;
+  }
+
+  // Match doctor by name (fallback)
+  if (report.doctor_name) return report.doctor_name;
+  if (report.doctorName) return report.doctorName;
+
+  return "Unknown Doctor";
+};
+
 
   if (view === "lab-reports") {
-    return (
-      <div className="section">
-        <h2>Lab Reports</h2>
+  return (
+    <div className="section">
+      <h2>Lab Reports</h2>
 
-        <div className="lab-reports-list">
-          {labReports.length === 0 && (
-            <p className="no-data">No lab reports available.</p>
-          )}
+      <div className="lab-reports-list">
+        {labReports.length === 0 && (
+          <p className="no-data">No lab reports available.</p>
+        )}
 
-          {labReports.map((report) => (
-            <div key={report.id} className="lab-report-card">
-              <h3>{report.test_name}</h3>
-              <p>
-                <strong>Test Date:</strong>{" "}
-                {new Date(report.date).toLocaleDateString()}
+        {labReports.map((report) => (
+          <div key={report.id} className="lab-report-card">
+            <h3>{report.test_name}</h3>
+
+            <p>
+              <strong>Test Date:</strong>{" "}
+              {new Date(report.date).toLocaleDateString()}
+            </p>
+
+            <p>
+              <strong>Ordered by:</strong> {resolveDoctorName(report)}
+            </p>
+
+            {/* SHOW REPORT NOTES */}
+            {(report.notes || report.report_notes || report.lab_notes) && (
+              <p style={{ marginTop: "8px" }}>
+                <strong>Report:</strong>{" "}
+                {report.report_notes }
               </p>
-              <p>
-                <strong>Ordered by:</strong> Dr. {report.doctor_name}
-              </p>
+            )}
 
-              {report.report_url && (
-                <a
-                  href={report.report_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn btn-primary"
-                >
-                  📄 Download Report
-                </a>
-              )}
-            </div>
-          ))}
-        </div>
+            {/* DOWNLOAD REPORT BUTTON */}
+            {report.report_url && (
+              <a
+                href={report.report_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-primary"
+                style={{ marginTop: "10px", display: "inline-block" }}
+              >
+                📄 Download Report
+              </a>
+            )}
+          </div>
+        ))}
       </div>
-    );
-  }
+    </div>
+  );
+}
+
 
   // Main Dashboard unchanged
   return (
@@ -1569,7 +1603,7 @@ export const PatientDashboard = () => {
           onClick={() => setView("prescriptions")}
         >
           <div className="stat-icon">📝</div>
-          <h3>Active Prescriptions</h3>
+          <h3>Prescriptions</h3>
           <p className="stat-number">{prescriptions.length}</p>
         </div>
       </div>
