@@ -9,7 +9,9 @@ export const ReceptionistDashboard = () => {
   // Data states
   const [doctors, setDoctors] = useState([]);
   const [appointments, setAppointments] = useState([]); // filtered by selectedDate from backend call
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const todayLocal = new Date().toLocaleDateString("en-CA"); // YYYY-MM-DD
+const [selectedDate, setSelectedDate] = useState(todayLocal);
+
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -65,14 +67,13 @@ export const ReceptionistDashboard = () => {
   // Helper formatting funcs (copied from Admin style)
   // -------------------------
   const formatDateOnlyIST = (dateString) => {
-    if (!dateString) return '';
-    try {
-      const d = new Date(dateString);
-      return d.toLocaleDateString('en-GB', { timeZone: 'Asia/Kolkata' }); // dd/mm/yyyy
-    } catch {
-      return dateString;
-    }
-  };
+  if (!dateString) return "";
+
+  // Keep raw YYYY-MM-DD → convert to DD/MM/YYYY
+  const [y, m, d] = dateString.split("-");
+  return `${d}/${m}/${y}`;
+};
+
 
   const extractAndFormatTimeFromISO = (isoString) => {
     if (!isoString) return '';
@@ -240,7 +241,15 @@ export const ReceptionistDashboard = () => {
                 const id = apt.id || apt._id || `${apt.patientId || apt.patient_name}-${apt.date || apt.appointmentDate}-${apt.time || apt.appointmentTime}`;
 
                 const rawDate = apt.date || apt.appointmentDate || null;
-                const dateDisplay = rawDate ? formatDateOnlyIST(rawDate) : '';
+let cleanDate = rawDate;
+
+// If it's an ISO string, convert to YYYY-MM-DD
+if (rawDate && rawDate.includes("T")) {
+  cleanDate = rawDate.split("T")[0];
+}
+
+const dateDisplay = cleanDate ? formatDateOnlyIST(cleanDate) : '';
+
 
                 let timeDisplay = apt.time || apt.appointmentTime || '';
                 if (!timeDisplay && rawDate && /\dT\d/.test(rawDate)) {
@@ -585,9 +594,8 @@ export const ReceptionistDashboard = () => {
   // Main Dashboard (default) — Admin style
   // -------------------------
  const todaysAppointmentsCount = appointments.filter(a => {
-  const apptDate = new Date(a.date || a.appointmentDate)
-    .toISOString()
-    .split('T')[0];
+ const apptDate = a.date;  // already "YYYY-MM-DD"
+
   return apptDate === selectedDate;
 }).length;
 

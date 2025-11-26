@@ -161,12 +161,7 @@ export const Login = () => {
               : "Don't have an account? Sign Up"}
           </button>
 
-          {!isSignup && (
-            <div className="test-credentials">
-              <p>Test Credentials:</p>
-              <small>Patient: patient@care.com / patient123</small>
-            </div>
-          )}
+          {!isSignup}
         </form>
       </div>
     </div>
