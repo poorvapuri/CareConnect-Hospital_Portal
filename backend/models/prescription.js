@@ -2,15 +2,15 @@ import pool from '../config/database.js';
 
 export class Prescription {
   static async create(prescriptionData) {
-    const { patientId, doctorId, medication, dosage, instructions } = prescriptionData;
+    const { patientId, doctorId, medication, dosage, instructions, duration  } = prescriptionData;
     
     const query = `
-      INSERT INTO prescriptions (patient_id, doctor_id, medication, dosage, instructions, date)
-      VALUES ($1, $2, $3, $4, $5, CURRENT_DATE)
+      INSERT INTO prescriptions (patient_id, doctor_id, medication, dosage, instructions, duration, date)
+      VALUES ($1, $2, $3, $4, $5, $6, CURRENT_DATE)
       RETURNING *
     `;
     
-    const values = [patientId, doctorId, medication, dosage, instructions];
+    const values = [patientId, doctorId, medication, dosage, instructions, duration];
     const result = await pool.query(query, values);
     return result.rows[0];
   }

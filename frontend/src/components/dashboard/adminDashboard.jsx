@@ -283,7 +283,7 @@ export const AdminDashboard = () => {
 
       setSpecializations(combined);
 
-    setSpecializations(uniqueSpecializations);
+    
     if (!formData.specialization && uniqueSpecializations.length > 0) {
       setFormData(prev => ({ ...prev, specialization: uniqueSpecializations[0] }));
     }
