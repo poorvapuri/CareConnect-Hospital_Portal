@@ -255,7 +255,7 @@ export const DoctorDashboard = () => {
               {patientHistory.labReports.map(report => (
                 <div key={report.id} className="history-item">
                   <span>{report.test_name}</span>
-                  <span>{new Date(report.date + "T00:00:00").toLocaleDateString()}</span>
+                  <span>{new Date(report.date).toLocaleDateString()}</span>
                   {report.report_url && (
                     <a 
                       href={report.report_url}
@@ -301,14 +301,22 @@ export const DoctorDashboard = () => {
 const handleSave = async () => {
   try {
     const data = {
-      patient_id: appointment.patient_id,
-      doctor_id: currentUser.id,
-      medication: prescription.medication,
-      dosage: prescription.dosage,
-      duration: prescription.duration,
-      instructions: prescription.instructions,
-      date: new Date().toISOString().split("T")[0],
-    };
+  patient_id: appointment.patient_id,
+  doctor_id: currentUser.id,
+  appointment_id: appointment.id,
+
+  medication: prescription.medication,
+  dosage: prescription.dosage,
+  dosage_unit: prescription.dosage_unit || "",   // add this field
+  duration: prescription.duration,
+  instructions: prescription.instructions,
+
+  lab_test_required: prescription.requiresLabTest,
+  lab_test_name: prescription.labTestName || "",
+  lab_test_instructions: prescription.labTestInstructions || "",
+
+  date: new Date().toISOString().split("T")[0],
+};
 
     if (existing) {
       await apiService.updatePrescription(existing.id, data);

@@ -965,6 +965,24 @@ export const PatientDashboard = () => {
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("upcoming");
 
+// ---- SAFE DATE PARSER ----
+const safeParseDate = (value) => {
+  if (!value) return "N/A";
+
+  try {
+    // Try interpreting directly (works for ISO)
+    const d1 = new Date(value);
+    if (!isNaN(d1)) return d1.toLocaleDateString();
+
+    // Try adding midnight (for plain YYYY-MM-DD)
+    const d2 = new Date(value + "T00:00:00");
+    if (!isNaN(d2)) return d2.toLocaleDateString();
+
+    return "N/A";
+  } catch {
+    return "N/A";
+  }
+};
 
   // ⭐ ADD THESE EXACTLY HERE (inside PatientDashboard function)
 const handleReschedule = async (appointmentId, newData) => {
@@ -1747,7 +1765,7 @@ const UpdateAppointment = ({ appointment }) => {
 
             <p>
               <strong>Test Date:</strong>{" "}
-              {new Date(report.date + "T00:00:00").toLocaleDateString()}
+              {safeParseDate(report.date)}
             </p>
 
             <p>
