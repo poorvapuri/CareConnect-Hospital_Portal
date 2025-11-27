@@ -66,6 +66,60 @@ const [selectedDate, setSelectedDate] = useState(todayLocal);
   // -------------------------
   // Helper formatting funcs (copied from Admin style)
   // -------------------------
+
+// -------------------------
+// FIXED DATE HELPERS (use these everywhere)
+// -------------------------
+const normalizeISODate = (value) => {
+  if (!value) return null; 
+  
+  // Already in YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+
+  try {
+    const d = new Date(value);
+    if (!isNaN(d)) return d.toISOString().split("T")[0];
+
+    // Try adding T00:00:00
+    const d2 = new Date(value + "T00:00:00");
+    if (!isNaN(d2)) return d2.toISOString().split("T")[0];
+
+    return null;
+  } catch {
+    return null;
+  }
+};
+
+const formatDateForUser = (value) => {
+  const iso = normalizeISODate(value);
+  if (!iso) return "N/A";
+  return new Date(iso + "T00:00:00").toLocaleDateString("en-IN"); 
+};
+
+const formatTimeForUser = (value) => {
+  if (!value) return "";
+
+  // Already HH:mm or HH:mm:ss?
+  if (/^\d{1,2}:\d{2}/.test(value)) {
+    const [h, m] = value.split(":");
+    return `${h.padStart(2, "0")}:${m.padStart(2, "0")}`;
+  }
+
+  try {
+    const d = new Date(value);
+    if (!isNaN(d)) {
+      return d.toLocaleTimeString("en-IN", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false
+      });
+    }
+  } catch {}
+
+  return "";
+};
+
+
   const formatDateOnlyIST = (dateString) => {
   if (!dateString) return "";
 
@@ -382,9 +436,21 @@ const dateDisplay = cleanDate ? formatDateOnlyIST(cleanDate) : '';
               {loading ? <p>Loading...</p> : unpaidAppointments.length === 0 ? <p>No unpaid appointments for selected date.</p> :
                 unpaidAppointments.map(appointment => {
                   const id = appointment.id || appointment._id;
-                  const rawDate = appointment.date || appointment.appointmentDate || null;
-                  const dateDisplay = rawDate ? formatDateOnlyIST(rawDate) : '';
-                  const timeDisplay = appointment.time || appointment.appointmentTime || (rawDate && /\dT\d/.test(rawDate) ? extractAndFormatTimeFromISO(rawDate) : '');
+                  // Normalize raw date first
+const rawDate = appointment.date || appointment.appointmentDate || null;
+
+const cleanISO = normalizeISODate(rawDate);     // becomes "2025-11-27"
+const dateDisplay = formatDateForUser(cleanISO); // becomes "27/11/2025"
+
+// Time fix
+let timeDisplay = appointment.time || appointment.appointmentTime;
+if (!timeDisplay) {
+  timeDisplay = formatTimeForUser(rawDate);
+} else {
+  timeDisplay = formatTimeForUser(timeDisplay);
+}
+
+
                   const doctorDisplay = cleanDoctorName(appointment.doctor_name || (appointment.doctor && (appointment.doctor.name || appointment.doctor.fullName)) || '');
 
                   return (
@@ -487,9 +553,20 @@ const dateDisplay = cleanDate ? formatDateOnlyIST(cleanDate) : '';
               {loading ? <p>Loading...</p> : paidAppointments.length === 0 ? <p>No paid appointments for selected date.</p> :
                 paidAppointments.map(appointment => {
                   const id = appointment.id || appointment._id;
-                  const rawDate = appointment.date || appointment.appointmentDate || null;
-                  const dateDisplay = rawDate ? formatDateOnlyIST(rawDate) : '';
-                  const timeDisplay = appointment.time || appointment.appointmentTime || (rawDate && /\dT\d/.test(rawDate) ? extractAndFormatTimeFromISO(rawDate) : '');
+                  // Normalize raw date first
+const rawDate = appointment.date || appointment.appointmentDate || null;
+
+const cleanISO = normalizeISODate(rawDate);     // "2025-11-27"
+const dateDisplay = formatDateForUser(cleanISO); // "27/11/2025"
+
+let timeDisplay = appointment.time || appointment.appointmentTime;
+if (!timeDisplay) {
+  timeDisplay = formatTimeForUser(rawDate);
+} else {
+  timeDisplay = formatTimeForUser(timeDisplay);
+}
+
+
                   const doctorDisplay = cleanDoctorName(appointment.doctor_name || (appointment.doctor && (appointment.doctor.name || appointment.doctor.fullName)) || '');
 
                   return (
@@ -593,11 +670,13 @@ const dateDisplay = cleanDate ? formatDateOnlyIST(cleanDate) : '';
   // -------------------------
   // Main Dashboard (default) — Admin style
   // -------------------------
- const todaysAppointmentsCount = appointments.filter(a => {
- const apptDate = a.date;  // already "YYYY-MM-DD"
+ const todayISO = new Date().toISOString().split("T")[0];
 
-  return apptDate === selectedDate;
+const todaysAppointmentsCount = appointments.filter(a => {
+  const apptDate = normalizeISODate(a.date || a.appointmentDate);
+  return apptDate === todayISO;
 }).length;
+
 
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto' }}>
