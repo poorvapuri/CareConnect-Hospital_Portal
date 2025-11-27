@@ -1507,15 +1507,20 @@ const UpdateAppointment = ({ appointment }) => {
   }
 
   if (view === "my-appointments") {
-    const upcomingAppointments = appointments.filter(
-      (a) => new Date(a.date) >= new Date() && a.status !== "Cancelled"
-    );
-    const pastAppointments = appointments.filter(
-      (a) => new Date(a.date) < new Date() || a.status === "Completed"
-    );
-    const cancelledAppointments = appointments.filter(
-      (a) => a.status === "Cancelled"
-    );
+  const today = new Date().toISOString().split("T")[0]; // yyyy-mm-dd
+
+  const upcomingAppointments = appointments.filter(
+    (a) => a.status !== "Cancelled" && a.date >= today
+  );
+
+  const pastAppointments = appointments.filter(
+    (a) => a.status !== "Cancelled" && a.date < today
+  );
+
+  const cancelledAppointments = appointments.filter(
+    (a) => a.status === "Cancelled"
+  );
+
 
     return (
       <div className="section appointments-page">
