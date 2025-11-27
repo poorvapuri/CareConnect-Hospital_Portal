@@ -1797,10 +1797,12 @@ const UpdateAppointment = ({ appointment }) => {
           <p className="stat-number">
             {
               appointments.filter(
-                (a) =>
-                  new Date(a.date) >= new Date() &&
-                  a.status === "Scheduled"
-              ).length
+  (a) => {
+    const today = new Date().toISOString().split("T")[0];
+    return (a.status === "Scheduled" || a.status === "Rescheduled") && a.date >= today;
+  }
+).length
+
             }
           </p>
         </div>
