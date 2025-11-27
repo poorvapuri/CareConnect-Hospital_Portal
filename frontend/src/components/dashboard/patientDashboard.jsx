@@ -970,19 +970,24 @@ const safeParseDate = (value) => {
   if (!value) return "N/A";
 
   try {
-    // Try interpreting directly (works for ISO)
+    // Direct parse
     const d1 = new Date(value);
-    if (!isNaN(d1)) return d1.toLocaleDateString();
+    if (!isNaN(d1.getTime())) {
+      return d1.toLocaleDateString("en-IN");
+    }
 
-    // Try adding midnight (for plain YYYY-MM-DD)
-    const d2 = new Date(value + "T00:00:00");
-    if (!isNaN(d2)) return d2.toLocaleDateString();
+    // Try converting YYYY-MM-DD → midnight
+    const d2 = new Date(`${value}T00:00:00`);
+    if (!isNaN(d2.getTime())) {
+      return d2.toLocaleDateString("en-IN");
+    }
 
     return "N/A";
   } catch {
     return "N/A";
   }
 };
+
 
   // ⭐ ADD THESE EXACTLY HERE (inside PatientDashboard function)
 const handleReschedule = async (appointmentId, newData) => {
@@ -1765,7 +1770,9 @@ const UpdateAppointment = ({ appointment }) => {
 
             <p>
               <strong>Test Date:</strong>{" "}
-              {safeParseDate(report.date)}
+              {safeParseDate(report.date) !== "N/A"
+    ? safeParseDate(report.date)
+    : safeParseDate(report.created_at)}
             </p>
 
             <p>
